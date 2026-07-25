@@ -14,16 +14,32 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  campus       String?
-  createdAt    DateTime @default(now())
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  campus        String?
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
 
-  listings Listing[]
-  offers   Offer[]
-  messages Message[]
+  listings          Listing[]
+  offers            Offer[]
+  messages          Message[]
+  verificationCodes VerificationCode[]
+}
+
+// Short-lived one-time codes emailed to the user to verify they own the
+// address they signed up with. codeHash is bcrypt-hashed like a password —
+// codes are only 6 digits, but short expiry + attempt limits keep them safe.
+model VerificationCode {
+  id        String   @id @default(cuid())
+  codeHash  String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // available  -> open for offers

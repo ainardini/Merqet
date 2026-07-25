@@ -8,7 +8,7 @@ No payment processing — buyers and sellers pay each other in person.
 ## Stack
 - **Next.js 14** (App Router) + TypeScript — pages and API routes in one app
 - **Prisma + Postgres** for the database (get a free one from [Neon](https://neon.tech), Supabase, or Railway — the same connection string works for local dev and for your Vercel deployment)
-- **Cookie-based auth** with bcrypt password hashing, restricted to `.edu` emails
+- **Cookie-based auth** with bcrypt password hashing and **email verification codes** — any email address can sign up, but the account is inactive until they enter the 6-digit code sent to that address
 
 ## Run it locally
 
@@ -22,13 +22,25 @@ No payment processing — buyers and sellers pay each other in person.
    ```bash
    npm install
    npm run db:push   # creates the tables from prisma/schema.prisma
-   npm run db:seed    # optional: adds two demo users + four listings
+   npm run db:seed    # optional: adds two pre-verified demo users + four listings
    npm run dev
    ```
 
 Visit http://localhost:3000. If you seeded the database, log in as:
 - `mei@university.edu` / `password123`
 - `arjun@university.edu` / `password123`
+
+### Email verification codes
+
+Without a `RESEND_API_KEY` set, verification codes are printed to your terminal
+instead of emailed — look for a line like `Verification code for you@x.com: 042917`
+after signing up. That's fine for local dev. For real emails:
+
+1. Sign up at [resend.com](https://resend.com) (free tier covers plenty of signups)
+2. Get an API key and put it in `.env` as `RESEND_API_KEY`
+3. Set `EMAIL_FROM` — Resend's sandbox domain (`onboarding@resend.dev`) works for
+   testing without any domain setup; verify your own domain with Resend before
+   going live so emails land reliably and don't look like spam
 
 ## How the core flows work
 
@@ -61,18 +73,24 @@ transfer app in person — Campus Trade only handles discovery, offers, and chat
 
 ## Before this is real and public
 
-- **Change `JWT_SECRET` and `ALLOWED_EMAIL_DOMAIN`** in `.env` — the checked-in
-  values are placeholders for local dev only.
+- **Change `JWT_SECRET`** in `.env` — the checked-in value is a placeholder for
+  local dev only.
+- **Set up `RESEND_API_KEY` in production** — without it, verification codes
+  only print to your server logs, which means real users can never actually
+  sign up. This is the one piece that's required, not optional, before launch.
 - **Use separate databases for dev and production** if you want to keep test
   data separate — create a second Neon/Supabase project for production and
   point Vercel's `DATABASE_URL` at that one instead of your local dev database.
 - **Deploy.** Push this to GitHub, then import it into Vercel — it detects
-  Next.js automatically. Add your `DATABASE_URL`, `JWT_SECRET`, and
-  `ALLOWED_EMAIL_DOMAIN` as environment variables in the Vercel dashboard.
+  Next.js automatically. Add your `DATABASE_URL`, `JWT_SECRET`,
+  `RESEND_API_KEY`, and `EMAIL_FROM` as environment variables in the Vercel
+  dashboard.
+- **Since anyone with any email can now sign up**, the campus-only trust that
+  `.edu` used to provide is gone — worth deciding whether you want that back
+  in some form (e.g. an invite-code system, or manually approving new signups
+  at first) versus accepting a more open userbase.
 - **Add basic safety nudges** — e.g. a note on the listing page encouraging
   meetups in public, well-lit campus spots (library, student center).
-- **Consider email verification** on signup (not just checking the domain
-  string) so people can't sign up with a fake `.edu`-looking address.
 - **Rate limit** the offer and message endpoints before this is public, so one
   person can't spam offers or messages.
 

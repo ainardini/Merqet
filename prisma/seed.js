@@ -8,12 +8,12 @@ async function main() {
   const mei = await prisma.user.upsert({
     where: { email: "mei@university.edu" },
     update: {},
-    create: { email: "mei@university.edu", name: "Mei L.", passwordHash, campus: "State University" },
+    create: { email: "mei@university.edu", name: "Mei L.", passwordHash, campus: "State University", emailVerified: true },
   });
   const arjun = await prisma.user.upsert({
     where: { email: "arjun@university.edu" },
     update: {},
-    create: { email: "arjun@university.edu", name: "Arjun P.", passwordHash, campus: "State University" },
+    create: { email: "arjun@university.edu", name: "Arjun P.", passwordHash, campus: "State University", emailVerified: true },
   });
 
   await prisma.listing.createMany({

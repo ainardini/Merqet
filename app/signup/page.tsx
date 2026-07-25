@@ -25,14 +25,13 @@ export default function SignupPage() {
       setError(data.error || "Something went wrong");
       return;
     }
-    router.push("/");
-    router.refresh();
+    router.push(`/verify?email=${encodeURIComponent(data.email)}`);
   }
 
   return (
     <div className="form-page">
       <h1 className="page-title" style={{ fontSize: 30 }}>Create your account</h1>
-      <p className="subtitle">Use your university email — that's what keeps this campus-only.</p>
+      <p className="subtitle">We'll email you a code to verify it's really you.</p>
       <div className="form-card">
         {error && <div className="error-msg">{error}</div>}
         <form onSubmit={handleSubmit}>
@@ -41,15 +40,14 @@ export default function SignupPage() {
             <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="field">
-            <label>University email</label>
+            <label>Email</label>
             <input
               required
               type="email"
-              placeholder="you@youruni.edu"
+              placeholder="you@example.com"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
-            <div className="hint">Must end in .edu (or your school's configured domain)</div>
           </div>
           <div className="field">
             <label>Campus (optional)</label>
@@ -66,7 +64,7 @@ export default function SignupPage() {
             />
           </div>
           <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
-            {loading ? "Creating account…" : "Sign up"}
+            {loading ? "Sending code…" : "Sign up"}
           </button>
         </form>
         <p style={{ marginTop: 14, fontSize: 13 }}>

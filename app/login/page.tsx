@@ -8,11 +8,13 @@ export default function LoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setNeedsVerification(false);
     setLoading(true);
     const res = await fetch("/api/auth/login", {
       method: "POST",
@@ -23,6 +25,7 @@ export default function LoginPage() {
     setLoading(false);
     if (!res.ok) {
       setError(data.error || "Something went wrong");
+      setNeedsVerification(!!data.needsVerification);
       return;
     }
     router.push("/");
@@ -34,9 +37,14 @@ export default function LoginPage() {
       <h1 className="page-title" style={{ fontSize: 30 }}>Welcome back</h1>
       <div className="form-card">
         {error && <div className="error-msg">{error}</div>}
+        {needsVerification && (
+          <p className="hint" style={{ marginBottom: 12 }}>
+            <Link href={`/verify?email=${encodeURIComponent(form.email)}`}>Verify your email</Link> to finish setting up your account.
+          </p>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="field">
-            <label>University email</label>
+            <label>Email</label>
             <input
               required
               type="email"
