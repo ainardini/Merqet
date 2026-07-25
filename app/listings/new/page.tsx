@@ -12,8 +12,33 @@ export default function NewListingPage() {
   const [form, setForm] = useState({
     title: "", description: "", category: CATEGORIES[0], condition: CONDITIONS[0], price: "", emoji: EMOJIS[0],
   });
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPhotoPreview(URL.createObjectURL(file));
+    setUploading(true);
+    setError("");
+
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: fd });
+    const data = await res.json();
+    setUploading(false);
+
+    if (!res.ok) {
+      setError(data.error || "Photo upload failed");
+      setPhotoPreview(null);
+      return;
+    }
+    setPhotoUrl(data.url);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,7 +47,7 @@ export default function NewListingPage() {
     const res = await fetch("/api/listings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, photoUrl }),
     });
     const data = await res.json();
     setLoading(false);
@@ -76,7 +101,20 @@ export default function NewListingPage() {
             />
           </div>
           <div className="field">
-            <label>Icon</label>
+            <label>Photo (optional)</label>
+            {photoPreview && (
+              <img
+                src={photoPreview}
+                alt="Preview"
+                style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 4, border: "2px solid var(--ink)", marginBottom: 8 }}
+              />
+            )}
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handlePhotoChange} />
+            {uploading && <div className="hint">Uploading…</div>}
+            <div className="hint">No photo? We'll use the icon below instead.</div>
+          </div>
+          <div className="field">
+            <label>Icon {photoUrl && "(shown if you remove the photo)"}</label>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {EMOJIS.map((em) => (
                 <button
@@ -91,8 +129,8 @@ export default function NewListingPage() {
               ))}
             </div>
           </div>
-          <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
-            {loading ? "Posting…" : "Post listing"}
+          <button className="btn btn-primary btn-full" type="submit" disabled={loading || uploading}>
+            {loading ? "Posting…" : uploading ? "Waiting for photo upload…" : "Post listing"}
           </button>
         </form>
       </div>

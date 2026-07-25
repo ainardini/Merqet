@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 
 type Offer = { id: string; amount: number; status: string; buyer: { name: string } };
 type Listing = {
-  id: string; title: string; emoji: string; price: number; status: string;
+  id: string; title: string; emoji: string; photoUrl: string | null; price: number; status: string;
   reservedUntil: string | null; offers: Offer[];
 };
 
@@ -75,7 +75,13 @@ export default function MyListingsPage() {
 
             return (
               <div className="card" key={item.id}>
-                <div className="thumb">{item.emoji}</div>
+                <div className="thumb" style={item.photoUrl ? { padding: 0, overflow: "hidden" } : undefined}>
+                  {item.photoUrl ? (
+                    <img src={item.photoUrl} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    item.emoji
+                  )}
+                </div>
                 <div className="item-title">{item.title}</div>
                 <div className="price">${item.price}</div>
 

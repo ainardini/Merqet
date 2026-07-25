@@ -54,6 +54,7 @@ model Listing {
   condition   String
   price       Int // original asking price, in whole currency units
   emoji       String   @default("📦")
+  photoUrl    String? // optional real photo, uploaded via Vercel Blob; falls back to emoji if not set
   status      String   @default("available")
   createdAt   DateTime @default(now())
 

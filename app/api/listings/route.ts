@@ -8,12 +8,21 @@ export async function GET(req: NextRequest) {
 
   const user = await getCurrentUser();
   const category = req.nextUrl.searchParams.get("category");
+  const search = req.nextUrl.searchParams.get("q")?.trim();
 
   const listings = await prisma.listing.findMany({
     where: {
       status: { not: "sold" },
       ...(user ? { sellerId: { not: user.id } } : {}),
       ...(category && category !== "All" ? { category } : {}),
+      ...(search
+        ? {
+            OR: [
+              { title: { contains: search, mode: "insensitive" } },
+              { description: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
     },
     include: {
       seller: { select: { name: true } },
@@ -29,7 +38,7 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
-  const { title, description, category, condition, price, emoji } = await req.json();
+  const { title, description, category, condition, price, emoji, photoUrl } = await req.json();
 
   if (!title || !description || !category || !condition || !price) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -47,6 +56,7 @@ export async function POST(req: NextRequest) {
       condition,
       price: Math.round(priceNum),
       emoji: emoji || "📦",
+      photoUrl: photoUrl || null,
       sellerId: user.id,
     },
   });

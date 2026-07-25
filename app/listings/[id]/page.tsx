@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 type Offer = { id: string; amount: number; status: string; buyerId: string; buyer?: { name: string } };
 type Listing = {
   id: string; title: string; description: string; category: string; condition: string;
-  price: number; emoji: string; status: string; reservedUntil: string | null;
+  price: number; emoji: string; photoUrl: string | null; status: string; reservedUntil: string | null;
   seller: { id: string; name: string }; offers: Offer[];
 };
 type Message = { id: string; body: string; senderId: string; sender: { name: string } };
@@ -105,8 +105,19 @@ export default function ListingDetailPage() {
     <div style={{ maxWidth: 640, margin: "30px auto" }}>
       {toast && <div className="toast">{toast}</div>}
 
-      <div className="thumb" style={{ height: 200, fontSize: 80, marginBottom: 16 }}>
-        {listing.emoji}
+      <div
+        className="thumb"
+        style={
+          listing.photoUrl
+            ? { height: 260, marginBottom: 16, padding: 0, overflow: "hidden" }
+            : { height: 200, fontSize: 80, marginBottom: 16 }
+        }
+      >
+        {listing.photoUrl ? (
+          <img src={listing.photoUrl} alt={listing.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          listing.emoji
+        )}
         <div className="condition-tag">{listing.condition}</div>
       </div>
 
