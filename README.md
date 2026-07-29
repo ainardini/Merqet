@@ -1,4 +1,4 @@
-# Campus Trade
+# Merqet
 
 A campus-only marketplace: students list used items at a fixed price, buyers can
 chat or make an offer, sellers accept/reject offers, and accepted offers give the
@@ -69,7 +69,7 @@ to close it out.
 
 **No payments.** There is intentionally no payment integration anywhere in this
 codebase. The whole point is buyers and sellers exchange cash or their own bank
-transfer app in person — Campus Trade only handles discovery, offers, and chat.
+transfer app in person — Merqet only handles discovery, offers, and chat.
 
 ## Before this is real and public
 

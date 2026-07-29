@@ -18,11 +18,11 @@ export default function NavBar({ user }: { user: User }) {
 
   async function handleInvite() {
     const url = typeof window !== "undefined" ? window.location.origin : "";
-    const message = `Come check out Campus Trade — buy and sell used stuff with people on campus, no shipping, no fees: ${url}`;
+    const message = `Come check out Merqet — buy and sell used stuff with people on campus, no shipping, no fees: ${url}`;
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Campus Trade", text: message, url });
+        await navigator.share({ title: "Merqet", text: message, url });
         return;
       } catch {
         // user cancelled the share sheet — fall through to clipboard
@@ -37,7 +37,7 @@ export default function NavBar({ user }: { user: User }) {
   return (
     <header className="site-header">
       <Link href="/" className="logo">
-        Campus <span>Trade</span>
+        Mer<span>qet</span>
       </Link>
       <nav className="nav-links">
         <button className="btn" onClick={handleInvite}>
@@ -46,11 +46,11 @@ export default function NavBar({ user }: { user: User }) {
         {user ? (
           <>
             <Link href="/">Browse</Link>
-            <Link href="/my-listings">My Listings</Link>
+            <Link href="/my-listings">My Lists</Link>
             <Link href="/listings/new" className="btn btn-primary">
-              + List an item
+              + Start Sell
             </Link>
-            <span style={{ color: "var(--ink-soft)" }}>{user.name}</span>
+            <span style={{ color: "var(--text-soft)" }}>{user.name}</span>
             <button className="btn" onClick={handleLogout}>
               Log out
             </button>

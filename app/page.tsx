@@ -56,12 +56,14 @@ export default function HomePage() {
         style={{
           width: "100%",
           maxWidth: 420,
-          border: "2px solid var(--ink)",
-          borderRadius: 4,
+          border: "1.5px solid var(--border)",
+          borderRadius: 10,
           padding: "10px 14px",
           fontFamily: "var(--font-body)",
           fontSize: 14,
           marginTop: 20,
+          background: "var(--surface)",
+          color: "var(--text)",
         }}
       />
 
@@ -78,7 +80,7 @@ export default function HomePage() {
       </div>
 
       {loading ? (
-        <p style={{ color: "var(--ink-soft)" }}>Loading listings…</p>
+        <p style={{ color: "var(--text-soft)" }}>Loading listings…</p>
       ) : listings.length === 0 ? (
         <div className="board">
           <div className="empty-state">

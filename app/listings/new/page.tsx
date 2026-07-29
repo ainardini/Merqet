@@ -60,7 +60,7 @@ export default function NewListingPage() {
 
   return (
     <div className="form-page">
-      <h1 className="page-title" style={{ fontSize: 30 }}>List an item</h1>
+      <h1 className="page-title" style={{ fontSize: 30 }}>Start Sell</h1>
       <p className="subtitle">Set your price — buyers can still send you an offer.</p>
       <div className="form-card">
         {error && <div className="error-msg">{error}</div>}
@@ -106,7 +106,7 @@ export default function NewListingPage() {
               <img
                 src={photoPreview}
                 alt="Preview"
-                style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 4, border: "2px solid var(--ink)", marginBottom: 8 }}
+                style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 10, border: "1.5px solid var(--border)", marginBottom: 8 }}
               />
             )}
             <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handlePhotoChange} />
@@ -122,7 +122,7 @@ export default function NewListingPage() {
                   key={em}
                   onClick={() => setForm({ ...form, emoji: em })}
                   className="chip"
-                  style={{ fontSize: 18, background: form.emoji === em ? "var(--highlighter)" : undefined }}
+                  style={{ fontSize: 18, background: form.emoji === em ? "var(--accent)" : undefined }}
                 >
                   {em}
                 </button>

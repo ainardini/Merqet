@@ -7,7 +7,7 @@
 // while you're developing locally before you've wired up a real provider.
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_ADDRESS = process.env.EMAIL_FROM || "Campus Trade <onboarding@resend.dev>";
+const FROM_ADDRESS = process.env.EMAIL_FROM || "Merqet <onboarding@resend.dev>";
 
 export async function sendVerificationEmail(to: string, code: string) {
   if (!RESEND_API_KEY) {
@@ -24,11 +24,11 @@ export async function sendVerificationEmail(to: string, code: string) {
     body: JSON.stringify({
       from: FROM_ADDRESS,
       to,
-      subject: `Your Campus Trade verification code: ${code}`,
+      subject: `Your Merqet verification code: ${code}`,
       html: `
         <div style="font-family: sans-serif; max-width: 420px; margin: 0 auto;">
           <h2>Verify your email</h2>
-          <p>Enter this code to finish creating your Campus Trade account:</p>
+          <p>Enter this code to finish creating your Merqet account:</p>
           <p style="font-size: 32px; font-weight: 700; letter-spacing: 6px;">${code}</p>
           <p style="color: #666; font-size: 13px;">This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>
         </div>

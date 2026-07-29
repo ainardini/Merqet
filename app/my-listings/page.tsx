@@ -58,7 +58,7 @@ export default function MyListingsPage() {
   return (
     <>
       {toast && <div className="toast">{toast}</div>}
-      <h1 className="page-title">My Listings</h1>
+      <h1 className="page-title">My Lists</h1>
       <p className="subtitle">Review offers, accept the best one, and manage your sales.</p>
 
       {listings.length === 0 ? (
@@ -89,7 +89,7 @@ export default function MyListingsPage() {
 
                 {item.status === "available" && (
                   pendingOffers.length === 0 ? (
-                    <p style={{ fontSize: 12, color: "var(--ink-soft)", fontFamily: "var(--font-mono)" }}>No offers yet</p>
+                    <p style={{ fontSize: 12, color: "var(--text-soft)", fontFamily: "var(--font-mono)" }}>No offers yet</p>
                   ) : (
                     <div className="offer-list">
                       {pendingOffers.map((o) => (

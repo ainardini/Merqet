@@ -174,7 +174,7 @@ export default function ListingDetailPage() {
             placeholder={`e.g. $${Math.max(1, listing.price - 5)}`}
             value={offerAmount}
             onChange={(e) => setOfferAmount(e.target.value)}
-            style={{ flex: 1, border: "2px solid var(--ink)", borderRadius: 4, padding: "10px 12px", fontFamily: "var(--font-mono)" }}
+            style={{ flex: 1, border: "1.5px solid var(--border)", borderRadius: 10, padding: "10px 12px", fontFamily: "var(--font-mono)", background: "var(--surface)", color: "var(--text)" }}
           />
           <button className="btn btn-primary" type="submit">Make offer</button>
         </form>
@@ -182,14 +182,14 @@ export default function ListingDetailPage() {
 
       {isOwner && (
         <p className="hint" style={{ marginTop: 20 }}>
-          This is your listing — manage offers on it from <a href="/my-listings">My Listings</a>.
+          This is your listing — manage offers on it from <a href="/my-listings">My Lists</a>.
         </p>
       )}
 
       {!isOwner && (
         <div className="chat-box">
           <div className="chat-messages">
-            {messages.length === 0 && <p style={{ color: "var(--ink-soft)", fontSize: 13 }}>Say hi to {listing.seller.name.split(" ")[0]} to ask questions or arrange a meetup.</p>}
+            {messages.length === 0 && <p style={{ color: "var(--text-soft)", fontSize: 13 }}>Say hi to {listing.seller.name.split(" ")[0]} to ask questions or arrange a meetup.</p>}
             {messages.map((m) => (
               <div key={m.id} className={`msg ${m.senderId === currentUserId ? "me" : "them"}`}>
                 {m.body}
