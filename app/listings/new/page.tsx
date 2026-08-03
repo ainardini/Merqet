@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CURRENCIES } from "@/lib/currency";
 
-const CATEGORIES = ["Textbooks", "Furniture", "Electronics", "Bikes", "Dorm"];
 const CONDITIONS = ["Like new", "Good", "Fair", "Well used"];
-const EMOJIS = ["📚", "🪑", "🧮", "🚲", "🧊", "💡", "🗄️", "🎒", "👕", "📦"];
+const CATEGORIES = ["Furniture", "Clothes", "Accessories", "Electronics", "Beauty", "Others"];
 
 export default function NewListingPage() {
   const router = useRouter();
-  const [form, setForm] = useState({
-    title: "", description: "", category: CATEGORIES[0], condition: CONDITIONS[0], price: "", emoji: EMOJIS[0],
+  const [form, setForm] = useState<{
+    title: string; description: string; category: string; condition: string; price: string; currency: string; meetupLocation: string;
+  }>({
+    title: "", description: "", category: CATEGORIES[0], condition: CONDITIONS[0], price: "", currency: CURRENCIES[0], meetupLocation: "",
   });
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -40,6 +42,11 @@ export default function NewListingPage() {
     setPhotoUrl(data.url);
   }
 
+  function handlePriceChange(value: string) {
+    const digitsOnly = value.replace(/[^0-9]/g, "");
+    setForm({ ...form, price: digitsOnly });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -66,7 +73,7 @@ export default function NewListingPage() {
         {error && <div className="error-msg">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="field">
-            <label>Title</label>
+            <label>Product's Name</label>
             <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           </div>
           <div className="field">
@@ -91,13 +98,32 @@ export default function NewListingPage() {
             </select>
           </div>
           <div className="field">
-            <label>Price ($)</label>
+            <label>Price</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <select
+                value={form.currency}
+                onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                style={{ width: 90, flexShrink: 0 }}
+              >
+                {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
+              </select>
+              <input
+                required
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={form.price}
+                onChange={(e) => handlePriceChange(e.target.value)}
+                style={{ flex: 1 }}
+              />
+            </div>
+          </div>
+          <div className="field">
+            <label>Preferred meetup location (optional)</label>
             <input
-              required
-              type="number"
-              min={1}
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
+              placeholder="e.g. Library, Student center"
+              value={form.meetupLocation}
+              onChange={(e) => setForm({ ...form, meetupLocation: e.target.value })}
             />
           </div>
           <div className="field">
@@ -111,23 +137,7 @@ export default function NewListingPage() {
             )}
             <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handlePhotoChange} />
             {uploading && <div className="hint">Uploading…</div>}
-            <div className="hint">No photo? We'll use the icon below instead.</div>
-          </div>
-          <div className="field">
-            <label>Icon {photoUrl && "(shown if you remove the photo)"}</label>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {EMOJIS.map((em) => (
-                <button
-                  type="button"
-                  key={em}
-                  onClick={() => setForm({ ...form, emoji: em })}
-                  className="chip"
-                  style={{ fontSize: 18, background: form.emoji === em ? "var(--accent)" : undefined }}
-                >
-                  {em}
-                </button>
-              ))}
-            </div>
+            <div className="hint">Best results: a square photo, at least 800×800px — it'll display consistently in listings.</div>
           </div>
           <button className="btn btn-primary btn-full" type="submit" disabled={loading || uploading}>
             {loading ? "Posting…" : uploading ? "Waiting for photo upload…" : "Post listing"}

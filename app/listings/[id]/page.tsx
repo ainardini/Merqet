@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { formatPrice } from "@/lib/currency";
 
 type Offer = { id: string; amount: number; status: string; buyerId: string; buyer?: { name: string } };
 type Listing = {
   id: string; title: string; description: string; category: string; condition: string;
-  price: number; emoji: string; photoUrl: string | null; status: string; reservedUntil: string | null;
+  price: number; currency: string; meetupLocation: string | null; emoji: string; photoUrl: string | null; status: string; reservedUntil: string | null;
   seller: { id: string; name: string }; offers: Offer[];
 };
 type Message = { id: string; body: string; senderId: string; sender: { name: string } };
@@ -68,7 +69,7 @@ export default function ListingDetailPage() {
     });
     const data = await res.json();
     if (!res.ok) return showToast(data.error || "Couldn't send offer");
-    showToast(`Offer of $${amount} sent`);
+    showToast(`Offer of ${formatPrice(amount, listing?.currency || "MYR")} sent`);
     setOfferAmount("");
     load();
   }
@@ -123,8 +124,11 @@ export default function ListingDetailPage() {
 
       <div className="category-tag">{listing.category}</div>
       <h1 style={{ fontSize: 26, margin: "6px 0" }}>{listing.title}</h1>
-      <div className="price" style={{ fontSize: 30, marginBottom: 6 }}>${listing.price}</div>
+      <div className="price" style={{ fontSize: 30, marginBottom: 6 }}>{formatPrice(listing.price, listing.currency)}</div>
       <p className="seller-line">Sold by <b>{listing.seller.name}</b></p>
+      {listing.meetupLocation && (
+        <p className="seller-line">Preferred meetup: <b>{listing.meetupLocation}</b></p>
+      )}
       <p style={{ marginTop: 14, lineHeight: 1.6 }}>{listing.description}</p>
 
       {listing.status === "sold" && (
@@ -139,17 +143,17 @@ export default function ListingDetailPage() {
 
       {myOffer?.status === "pending" && (
         <div className="offer-status pending" style={{ marginTop: 20 }}>
-          <div><b>Offer sent: ${myOffer.amount}</b></div>
+          <div><b>Offer sent: {formatPrice(myOffer.amount, listing.currency)}</b></div>
           <div>Waiting for {listing.seller.name.split(" ")[0]} to respond…</div>
         </div>
       )}
 
       {myOffer?.status === "accepted" && listing.status === "reserved" && (
         <div className="reserved-block" style={{ marginTop: 20 }}>
-          <div><b>Your offer of ${myOffer.amount} was accepted!</b></div>
+          <div><b>Your offer of {formatPrice(myOffer.amount, listing.currency)} was accepted!</b></div>
           <div className="os-timer">{timeLeft(listing.reservedUntil)} to confirm</div>
           <button className="btn btn-primary" onClick={() => confirmPurchase(myOffer.id)}>
-            Confirm purchase — ${myOffer.amount}
+            Confirm purchase — {formatPrice(myOffer.amount, listing.currency)}
           </button>
         </div>
       )}
@@ -171,7 +175,7 @@ export default function ListingDetailPage() {
           <input
             type="number"
             min={1}
-            placeholder={`e.g. $${Math.max(1, listing.price - 5)}`}
+            placeholder={`e.g. ${formatPrice(Math.max(1, listing.price - 5), listing.currency)}`}
             value={offerAmount}
             onChange={(e) => setOfferAmount(e.target.value)}
             style={{ flex: 1, border: "1.5px solid var(--border)", borderRadius: 10, padding: "10px 12px", fontFamily: "var(--font-mono)", background: "var(--surface)", color: "var(--text)" }}

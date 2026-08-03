@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { formatPrice } from "@/lib/currency";
 
 type Offer = { id: string; amount: number; status: string; buyer: { name: string } };
 type Listing = {
-  id: string; title: string; emoji: string; photoUrl: string | null; price: number; status: string;
+  id: string; title: string; emoji: string; photoUrl: string | null; price: number; currency: string; status: string;
   reservedUntil: string | null; offers: Offer[];
 };
 
@@ -83,7 +84,7 @@ export default function MyListingsPage() {
                   )}
                 </div>
                 <div className="item-title">{item.title}</div>
-                <div className="price">${item.price}</div>
+                <div className="price">{formatPrice(item.price, item.currency)}</div>
 
                 {item.status === "sold" && <span className="sold-badge">SOLD</span>}
 
@@ -94,7 +95,7 @@ export default function MyListingsPage() {
                     <div className="offer-list">
                       {pendingOffers.map((o) => (
                         <div className="offer-row" key={o.id}>
-                          <div>{o.buyer.name} — <b>${o.amount}</b></div>
+                          <div>{o.buyer.name} — <b>{formatPrice(o.amount, item.currency)}</b></div>
                           <div style={{ display: "flex", gap: 6 }}>
                             <button className="mini-btn accept" onClick={() => act(`/api/offers/${o.id}/accept`, `Accepted ${o.buyer.name}'s offer`)}>Accept</button>
                             <button className="mini-btn" onClick={() => act(`/api/offers/${o.id}/reject`, "Offer declined")}>Reject</button>
@@ -107,7 +108,7 @@ export default function MyListingsPage() {
 
                 {item.status === "reserved" && accepted && (
                   <div className="reserved-block">
-                    <div><b>{accepted.buyer.name}</b> accepted at ${accepted.amount}</div>
+                    <div><b>{accepted.buyer.name}</b> accepted at {formatPrice(accepted.amount, item.currency)}</div>
                     <div className="os-timer">{timeLeft(item.reservedUntil)} for them to confirm</div>
                   </div>
                 )}

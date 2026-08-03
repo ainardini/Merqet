@@ -34,28 +34,34 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ listings });
 }
 
+const VALID_CATEGORIES = ["Furniture", "Clothes", "Accessories", "Electronics", "Beauty", "Others"];
+
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
-  const { title, description, category, condition, price, emoji, photoUrl } = await req.json();
+  const { title, description, category, condition, price, currency, meetupLocation, photoUrl } = await req.json();
 
-  if (!title || !description || !category || !condition || !price) {
+  if (!title || !description || !condition || !price) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
   const priceNum = Number(price);
   if (!Number.isFinite(priceNum) || priceNum <= 0) {
     return NextResponse.json({ error: "Price must be a positive number" }, { status: 400 });
   }
+  const currencyValue = currency === "KRW" ? "KRW" : "MYR";
+  const categoryValue = VALID_CATEGORIES.includes(category) ? category : "Others";
 
   const listing = await prisma.listing.create({
     data: {
       title,
       description,
-      category,
+      category: categoryValue,
       condition,
       price: Math.round(priceNum),
-      emoji: emoji || "📦",
+      currency: currencyValue,
+      meetupLocation: meetupLocation?.trim() || null,
+      emoji: "📦",
       photoUrl: photoUrl || null,
       sellerId: user.id,
     },

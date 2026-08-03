@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { formatPrice } from "@/lib/currency";
 
-const CATEGORIES = ["All", "Textbooks", "Furniture", "Electronics", "Bikes", "Dorm"];
+const CATEGORIES = ["All", "Furniture", "Clothes", "Accessories", "Electronics", "Beauty", "Others"];
 
 type Listing = {
   id: string;
@@ -11,6 +12,7 @@ type Listing = {
   category: string;
   condition: string;
   price: number;
+  currency: string;
   emoji: string;
   photoUrl: string | null;
   status: string;
@@ -106,14 +108,14 @@ export default function HomePage() {
                 <div className="item-title">{item.title}</div>
                 <div>
                   <div className="price-label">Price</div>
-                  <div className="price">${item.price}</div>
+                  <div className="price">{formatPrice(item.price, item.currency)}</div>
                 </div>
                 <div className="seller-line">Sold by <b>{item.seller.name}</b></div>
                 {item.status === "reserved" && (
                   <div className="offer-status pending">Reserved by another buyer</div>
                 )}
                 {myOffer && myOffer.status === "pending" && (
-                  <div className="offer-status pending">Your offer: ${myOffer.amount} — pending</div>
+                  <div className="offer-status pending">Your offer: {formatPrice(myOffer.amount, item.currency)} — pending</div>
                 )}
               </Link>
             );

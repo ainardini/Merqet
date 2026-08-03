@@ -53,6 +53,8 @@ model Listing {
   category    String
   condition   String
   price       Int // original asking price, in whole currency units
+  currency    String   @default("MYR") // "MYR" or "KRW"
+  meetupLocation String? // free-text spot the seller prefers to meet, e.g. "Library"
   emoji       String   @default("📦")
   photoUrl    String? // optional real photo, uploaded via Vercel Blob; falls back to emoji if not set
   status      String   @default("available")

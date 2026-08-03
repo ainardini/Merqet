@@ -21,7 +21,7 @@ async function main() {
       {
         title: "Organic Chemistry 4th Ed. (barely cracked)",
         description: "Used for one semester, no highlighting, all pages intact.",
-        category: "Textbooks", condition: "Good", price: 25, emoji: "📚", sellerId: mei.id,
+        category: "Others", condition: "Good", price: 25, emoji: "📚", sellerId: mei.id,
       },
       {
         title: "TI-84 Plus calculator",
@@ -36,7 +36,7 @@ async function main() {
       {
         title: "Mini fridge, works great, loud-ish",
         description: "Perfect size for a dorm, a bit noisy at night.",
-        category: "Dorm", condition: "Good", price: 30, emoji: "🧊", sellerId: arjun.id,
+        category: "Others", condition: "Good", price: 30, emoji: "🧊", sellerId: arjun.id,
       },
     ],
   });
