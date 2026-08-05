@@ -3,11 +3,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/currency";
+import { getListingPhotos } from "@/lib/photos";
 
 type Offer = { id: string; amount: number; status: string; buyerId: string; buyer?: { name: string } };
 type Listing = {
   id: string; title: string; description: string; category: string; condition: string;
-  price: number; currency: string; meetupLocation: string | null; emoji: string; photoUrl: string | null; status: string; reservedUntil: string | null;
+  price: number; currency: string; meetupLocation: string | null; emoji: string; photoUrl: string | null; photoUrls: string[]; status: string; reservedUntil: string | null;
   seller: { id: string; name: string }; offers: Offer[];
 };
 type Message = { id: string; body: string; senderId: string; sender: { name: string } };
@@ -32,12 +33,14 @@ export default function ListingDetailPage() {
   const [chatText, setChatText] = useState("");
   const [toast, setToast] = useState("");
   const [tick, setTick] = useState(0);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/listings/${id}`);
     const data = await res.json();
     setListing(data.listing);
     setIsOwner(data.isOwner);
+    setActiveImageIndex(0);
   }, [id]);
 
   useEffect(() => {
@@ -106,21 +109,45 @@ export default function ListingDetailPage() {
     <div style={{ maxWidth: 640, margin: "30px auto" }}>
       {toast && <div className="toast">{toast}</div>}
 
-      <div
-        className="thumb"
-        style={
-          listing.photoUrl
-            ? { height: 260, marginBottom: 16, padding: 0, overflow: "hidden" }
-            : { height: 200, fontSize: 80, marginBottom: 16 }
-        }
-      >
-        {listing.photoUrl ? (
-          <img src={listing.photoUrl} alt={listing.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        ) : (
-          listing.emoji
-        )}
-        <div className="condition-tag">{listing.condition}</div>
-      </div>
+      {(() => {
+        const photos = getListingPhotos(listing);
+        const mainPhoto = photos[activeImageIndex] || photos[0];
+        return (
+          <>
+            <div
+              className="thumb"
+              style={
+                mainPhoto
+                  ? { height: 260, marginBottom: 8, padding: 0, overflow: "hidden" }
+                  : { height: 200, fontSize: 80, marginBottom: 8 }
+              }
+            >
+              {mainPhoto ? (
+                <img src={mainPhoto} alt={listing.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                listing.emoji
+              )}
+              <div className="condition-tag">{listing.condition}</div>
+            </div>
+            {photos.length > 1 && (
+              <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                {photos.map((url, i) => (
+                  <img
+                    key={i}
+                    src={url}
+                    alt={`${listing.title} photo ${i + 1}`}
+                    onClick={() => setActiveImageIndex(i)}
+                    style={{
+                      width: 56, height: 56, objectFit: "cover", borderRadius: 8, cursor: "pointer",
+                      border: i === activeImageIndex ? "2px solid var(--accent)" : "1.5px solid var(--border)",
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       <div className="category-tag">{listing.category}</div>
       <h1 style={{ fontSize: 26, margin: "6px 0" }}>{listing.title}</h1>
@@ -186,7 +213,7 @@ export default function ListingDetailPage() {
 
       {isOwner && (
         <p className="hint" style={{ marginTop: 20 }}>
-          This is your listing — manage offers on it from <a href="/my-listings">My Lists</a>.
+          This is your listing — manage offers on it from <a href="/my-listings">My Lists</a>, and reply to buyers from your <a href="/inbox">Inbox</a>.
         </p>
       )}
 

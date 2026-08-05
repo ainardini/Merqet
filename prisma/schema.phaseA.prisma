@@ -68,6 +68,7 @@ model Listing {
 
   offers        Offer[]
   conversations Conversation[]
+  legacyMessages Message[] @relation("LegacyListingMessages")
 
   // Set when an offer is accepted; cleared when confirmed, cancelled, or expired.
   reservedOfferId String?
@@ -117,8 +118,16 @@ model Message {
   body      String
   createdAt DateTime @default(now())
 
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  // Legacy field from before conversations existed — kept temporarily, with
+  // its exact original name, so Prisma treats it as the same existing
+  // column (and existing data) rather than creating a new empty one. The
+  // migration script reads this to figure out which buyer each old message
+  // belongs to. Removed in the final schema once migration is done.
+  listingId String?
+  listing   Listing? @relation("LegacyListingMessages", fields: [listingId], references: [id], onDelete: Cascade)
+
+  conversationId String? // nullable during migration; required again in the final schema
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   senderId String
   sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)

@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
-  const { title, description, category, condition, price, currency, meetupLocation, photoUrl } = await req.json();
+  const { title, description, category, condition, price, currency, meetupLocation, photoUrls } = await req.json();
 
   if (!title || !description || !condition || !price) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
   }
   const currencyValue = currency === "KRW" ? "KRW" : "MYR";
   const categoryValue = VALID_CATEGORIES.includes(category) ? category : "Others";
+  const photoUrlsValue = Array.isArray(photoUrls) ? photoUrls.filter((u) => typeof u === "string").slice(0, 5) : [];
 
   const listing = await prisma.listing.create({
     data: {
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
       currency: currencyValue,
       meetupLocation: meetupLocation?.trim() || null,
       emoji: "📦",
-      photoUrl: photoUrl || null,
+      photoUrls: photoUrlsValue,
       sellerId: user.id,
     },
   });

@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { formatPrice } from "@/lib/currency";
+import { getListingPhotos } from "@/lib/photos";
 
 type Offer = { id: string; amount: number; status: string; buyer: { name: string } };
 type Listing = {
-  id: string; title: string; emoji: string; photoUrl: string | null; price: number; currency: string; status: string;
+  id: string; title: string; emoji: string; photoUrl: string | null; photoUrls: string[]; price: number; currency: string; status: string;
   reservedUntil: string | null; offers: Offer[];
 };
 
@@ -76,9 +77,9 @@ export default function MyListingsPage() {
 
             return (
               <div className="card" key={item.id}>
-                <div className="thumb" style={item.photoUrl ? { padding: 0, overflow: "hidden" } : undefined}>
-                  {item.photoUrl ? (
-                    <img src={item.photoUrl} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div className="thumb" style={getListingPhotos(item)[0] ? { padding: 0, overflow: "hidden" } : undefined}>
+                  {getListingPhotos(item)[0] ? (
+                    <img src={getListingPhotos(item)[0]} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
                     item.emoji
                   )}

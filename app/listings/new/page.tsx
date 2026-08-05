@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CURRENCIES } from "@/lib/currency";
+import { MAX_LISTING_PHOTOS } from "@/lib/photos";
 
 const CONDITIONS = ["Like new", "Good", "Fair", "Well used"];
 const CATEGORIES = ["Furniture", "Clothes", "Accessories", "Electronics", "Beauty", "Others"];
+
+type PhotoSlot = { previewUrl: string; uploadedUrl: string | null; uploading: boolean; error: string | null };
 
 export default function NewListingPage() {
   const router = useRouter();
@@ -14,32 +17,61 @@ export default function NewListingPage() {
   }>({
     title: "", description: "", category: CATEGORIES[0], condition: CONDITIONS[0], price: "", currency: CURRENCIES[0], meetupLocation: "",
   });
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [photos, setPhotos] = useState<PhotoSlot[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const anyUploading = photos.some((p) => p.uploading);
 
-    setPhotoPreview(URL.createObjectURL(file));
-    setUploading(true);
-    setError("");
+  async function handlePhotosChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    const data = await res.json();
-    setUploading(false);
-
-    if (!res.ok) {
-      setError(data.error || "Photo upload failed");
-      setPhotoPreview(null);
+    const remainingSlots = MAX_LISTING_PHOTOS - photos.length;
+    if (remainingSlots <= 0) {
+      setError(`You can only add up to ${MAX_LISTING_PHOTOS} photos.`);
+      e.target.value = "";
       return;
     }
-    setPhotoUrl(data.url);
+
+    const filesToAdd = files.slice(0, remainingSlots);
+    if (files.length > remainingSlots) {
+      setError(`Only added ${remainingSlots} more — ${MAX_LISTING_PHOTOS} photo limit reached.`);
+    } else {
+      setError("");
+    }
+
+    const newSlots: PhotoSlot[] = filesToAdd.map((file) => ({
+      previewUrl: URL.createObjectURL(file),
+      uploadedUrl: null,
+      uploading: true,
+      error: null,
+    }));
+    setPhotos((prev) => [...prev, ...newSlots]);
+
+    const startIndex = photos.length;
+    filesToAdd.forEach(async (file, i) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      setPhotos((prev) => {
+        const next = [...prev];
+        const slot = next[startIndex + i];
+        if (!slot) return next;
+        next[startIndex + i] = res.ok
+          ? { ...slot, uploadedUrl: data.url, uploading: false }
+          : { ...slot, uploading: false, error: data.error || "Upload failed" };
+        return next;
+      });
+    });
+
+    e.target.value = ""; // allow re-selecting the same file again if removed
+  }
+
+  function removePhoto(index: number) {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+    setError("");
   }
 
   function handlePriceChange(value: string) {
@@ -50,11 +82,22 @@ export default function NewListingPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    if (anyUploading) {
+      setError("Wait for photos to finish uploading first.");
+      return;
+    }
+    if (photos.some((p) => p.error)) {
+      setError("Remove any photos that failed to upload before posting.");
+      return;
+    }
+
     setLoading(true);
+    const photoUrls = photos.map((p) => p.uploadedUrl).filter((u): u is string => !!u);
     const res = await fetch("/api/listings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, photoUrl }),
+      body: JSON.stringify({ ...form, photoUrls }),
     });
     const data = await res.json();
     setLoading(false);
@@ -127,20 +170,57 @@ export default function NewListingPage() {
             />
           </div>
           <div className="field">
-            <label>Photo (optional)</label>
-            {photoPreview && (
-              <img
-                src={photoPreview}
-                alt="Preview"
-                style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 10, border: "1.5px solid var(--border)", marginBottom: 8 }}
-              />
+            <label>Photos ({photos.length}/{MAX_LISTING_PHOTOS})</label>
+
+            {photos.length > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: 8, marginBottom: 10 }}>
+                {photos.map((photo, i) => (
+                  <div key={i} style={{ position: "relative" }}>
+                    <img
+                      src={photo.previewUrl}
+                      alt={`Photo ${i + 1}`}
+                      style={{
+                        width: "100%", height: 80, objectFit: "cover", borderRadius: 10,
+                        border: photo.error ? "1.5px solid var(--danger)" : "1.5px solid var(--border)",
+                        opacity: photo.uploading ? 0.5 : 1,
+                      }}
+                    />
+                    {photo.uploading && (
+                      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "var(--text)" }}>
+                        Uploading…
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(i)}
+                      style={{
+                        position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%",
+                        background: "var(--danger)", color: "white", border: "none", fontSize: 12, cursor: "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}
+                      aria-label="Remove photo"
+                    >
+                      ×
+                    </button>
+                    {i === 0 && !photo.uploading && (
+                      <div style={{ position: "absolute", bottom: 4, left: 4, background: "var(--accent)", color: "var(--accent-ink)", fontSize: 8, fontWeight: 700, padding: "1px 6px", borderRadius: 999 }}>
+                        MAIN
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
-            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handlePhotoChange} />
-            {uploading && <div className="hint">Uploading…</div>}
-            <div className="hint">Best results: a square photo, at least 800×800px — it'll display consistently in listings.</div>
+
+            {photos.length < MAX_LISTING_PHOTOS && (
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple onChange={handlePhotosChange} />
+            )}
+            <div className="hint">
+              Up to {MAX_LISTING_PHOTOS} photos. Best results: square photos, at least 800×800px. First photo is used as the main thumbnail.
+            </div>
           </div>
-          <button className="btn btn-primary btn-full" type="submit" disabled={loading || uploading}>
-            {loading ? "Posting…" : uploading ? "Waiting for photo upload…" : "Post listing"}
+          <button className="btn btn-primary btn-full" type="submit" disabled={loading || anyUploading}>
+            {loading ? "Posting…" : anyUploading ? "Waiting for photos to upload…" : "Post listing"}
           </button>
         </form>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -9,6 +9,9 @@ type User = { id: string; name: string; email: string } | null;
 export default function NavBar({ user }: { user: User }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const seenMessageIds = useRef<Set<string>>(new Set());
+  const firstPoll = useRef(true);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -34,6 +37,43 @@ export default function NavBar({ user }: { user: User }) {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  useEffect(() => {
+    if (!user) return;
+
+    async function pollUnread() {
+      const res = await fetch("/api/conversations");
+      if (!res.ok) return;
+      const data = await res.json();
+      const conversations = data.conversations || [];
+      const total = conversations.reduce((sum: number, c: any) => sum + c.unreadCount, 0);
+
+      // Fire a browser notification for genuinely new unread messages, not on first load
+      if (!firstPoll.current && Notification?.permission === "granted") {
+        conversations.forEach((c: any) => {
+          if (c.lastMessage && c.unreadCount > 0) {
+            const key = `${c.id}:${c.lastMessageAt}`;
+            if (!seenMessageIds.current.has(key)) {
+              seenMessageIds.current.add(key);
+              new Notification(`New message from ${c.otherParty.name}`, {
+                body: c.lastMessage.body,
+                tag: c.id,
+              });
+            }
+          }
+        });
+      } else {
+        conversations.forEach((c: any) => seenMessageIds.current.add(`${c.id}:${c.lastMessageAt}`));
+      }
+
+      firstPoll.current = false;
+      setUnreadCount(total);
+    }
+
+    pollUnread();
+    const interval = setInterval(pollUnread, 10000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   return (
     <header className="site-header">
       <Link href="/" className="logo">
@@ -46,6 +86,20 @@ export default function NavBar({ user }: { user: User }) {
         {user ? (
           <>
             <Link href="/">Browse</Link>
+            <Link href="/inbox" style={{ position: "relative" }}>
+              Inbox
+              {unreadCount > 0 && (
+                <span
+                  style={{
+                    position: "absolute", top: -8, right: -14, background: "var(--accent)",
+                    color: "var(--accent-ink)", borderRadius: 999, fontSize: 10, fontWeight: 700,
+                    padding: "1px 6px", minWidth: 16, textAlign: "center",
+                  }}
+                >
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
             <Link href="/my-listings">My Lists</Link>
             <Link href="/listings/new" className="btn btn-primary">
               + Start Sell

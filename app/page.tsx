@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/currency";
+import { getListingPhotos } from "@/lib/photos";
 
 const CATEGORIES = ["All", "Furniture", "Clothes", "Accessories", "Electronics", "Beauty", "Others"];
 
@@ -15,6 +16,7 @@ type Listing = {
   currency: string;
   emoji: string;
   photoUrl: string | null;
+  photoUrls: string[];
   status: string;
   seller: { name: string };
   offers: { id: string; amount: number; status: string }[];
@@ -96,9 +98,9 @@ export default function HomePage() {
             const myOffer = item.offers?.[0];
             return (
               <Link href={`/listings/${item.id}`} key={item.id} className="card" style={{ textDecoration: "none" }}>
-                <div className="thumb" style={item.photoUrl ? { padding: 0, overflow: "hidden" } : undefined}>
-                  {item.photoUrl ? (
-                    <img src={item.photoUrl} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <div className="thumb" style={getListingPhotos(item)[0] ? { padding: 0, overflow: "hidden" } : undefined}>
+                  {getListingPhotos(item)[0] ? (
+                    <img src={getListingPhotos(item)[0]} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
                     item.emoji
                   )}
