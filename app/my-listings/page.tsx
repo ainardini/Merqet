@@ -55,6 +55,20 @@ export default function MyListingsPage() {
     load();
   }
 
+  async function markSold(id: string, title: string) {
+    if (!confirm(`Mark "${title}" as sold? Any pending offers on it will be closed out.`)) return;
+    await act(`/api/listings/${id}/mark-sold`, "Marked as sold");
+  }
+
+  async function deleteListing(id: string, title: string) {
+    if (!confirm(`Delete "${title}"? This can't be undone.`)) return;
+    const res = await fetch(`/api/listings/${id}`, { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok) return showToast(data.error || "Something went wrong");
+    showToast("Listing deleted");
+    load();
+  }
+
   if (loading) return <p style={{ padding: 40 }}>Loading…</p>;
 
   return (
@@ -90,27 +104,36 @@ export default function MyListingsPage() {
                 {item.status === "sold" && <span className="sold-badge">SOLD</span>}
 
                 {item.status === "available" && (
-                  pendingOffers.length === 0 ? (
-                    <p style={{ fontSize: 12, color: "var(--text-soft)", fontFamily: "var(--font-mono)" }}>No offers yet</p>
-                  ) : (
-                    <div className="offer-list">
-                      {pendingOffers.map((o) => (
-                        <div className="offer-row" key={o.id}>
-                          <div>{o.buyer.name} — <b>{formatPrice(o.amount, item.currency)}</b></div>
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <button className="mini-btn accept" onClick={() => act(`/api/offers/${o.id}/accept`, `Accepted ${o.buyer.name}'s offer`)}>Accept</button>
-                            <button className="mini-btn" onClick={() => act(`/api/offers/${o.id}/reject`, "Offer declined")}>Reject</button>
+                  <>
+                    {pendingOffers.length === 0 ? (
+                      <p style={{ fontSize: 12, color: "var(--text-soft)", fontFamily: "var(--font-mono)" }}>No offers yet</p>
+                    ) : (
+                      <div className="offer-list">
+                        {pendingOffers.map((o) => (
+                          <div className="offer-row" key={o.id}>
+                            <div>{o.buyer.name} — <b>{formatPrice(o.amount, item.currency)}</b></div>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <button className="mini-btn accept" onClick={() => act(`/api/offers/${o.id}/accept`, `Accepted ${o.buyer.name}'s offer`)}>Accept</button>
+                              <button className="mini-btn" onClick={() => act(`/api/offers/${o.id}/reject`, "Offer declined")}>Reject</button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    )}
+                    <div className="btn-row">
+                      <button className="btn" onClick={() => deleteListing(item.id, item.title)}>Delete</button>
+                      <button className="btn btn-primary" onClick={() => markSold(item.id, item.title)}>Mark as sold</button>
                     </div>
-                  )
+                  </>
                 )}
 
                 {item.status === "reserved" && accepted && (
                   <div className="reserved-block">
                     <div><b>{accepted.buyer.name}</b> accepted at {formatPrice(accepted.amount, item.currency)}</div>
                     <div className="os-timer">{timeLeft(item.reservedUntil)} for them to confirm</div>
+                    <button className="btn" style={{ marginTop: 4 }} onClick={() => markSold(item.id, item.title)}>
+                      Mark as sold anyway
+                    </button>
                   </div>
                 )}
 
