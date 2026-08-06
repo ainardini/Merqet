@@ -38,14 +38,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const conversation = await requireParticipant(params.id, user.id);
   if (!conversation) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { body } = await req.json();
-  if (!body || !body.trim()) {
+  const { body, attachmentUrl, attachmentType } = await req.json();
+  const trimmedBody = typeof body === "string" ? body.trim() : "";
+  const hasAttachment = attachmentUrl && ["image", "audio"].includes(attachmentType);
+
+  if (!trimmedBody && !hasAttachment) {
     return NextResponse.json({ error: "Message can't be empty" }, { status: 400 });
   }
 
   const [message] = await prisma.$transaction([
     prisma.message.create({
-      data: { conversationId: params.id, senderId: user.id, body: body.trim().slice(0, 2000) },
+      data: {
+        conversationId: params.id,
+        senderId: user.id,
+        body: trimmedBody ? trimmedBody.slice(0, 2000) : null,
+        attachmentUrl: hasAttachment ? attachmentUrl : null,
+        attachmentType: hasAttachment ? attachmentType : null,
+      },
       include: { sender: { select: { id: true, name: true } } },
     }),
     prisma.conversation.update({ where: { id: params.id }, data: { lastMessageAt: new Date() } }),

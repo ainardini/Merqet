@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/currency";
 import { getListingPhotos } from "@/lib/photos";
+import ChatBox, { ChatMessage } from "@/components/ChatBox";
 
 type Offer = { id: string; amount: number; status: string; buyerId: string; buyer?: { name: string } };
 type Listing = {
@@ -11,7 +12,6 @@ type Listing = {
   price: number; currency: string; meetupLocation: string | null; emoji: string; photoUrl: string | null; photoUrls: string[]; status: string; reservedUntil: string | null;
   seller: { id: string; name: string }; offers: Offer[];
 };
-type Message = { id: string; body: string; senderId: string; sender: { name: string } };
 
 function timeLeft(reservedUntil: string | null) {
   if (!reservedUntil) return "";
@@ -29,8 +29,7 @@ export default function ListingDetailPage() {
   const [isOwner, setIsOwner] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [offerAmount, setOfferAmount] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [chatText, setChatText] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [toast, setToast] = useState("");
   const [tick, setTick] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -85,18 +84,15 @@ export default function ListingDetailPage() {
     load();
   }
 
-  async function sendMessage(e: React.FormEvent) {
-    e.preventDefault();
-    if (!chatText.trim()) return;
+  async function sendMessage(payload: { body?: string; attachmentUrl?: string; attachmentType?: "image" | "audio" }) {
     const res = await fetch(`/api/listings/${id}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body: chatText }),
+      body: JSON.stringify(payload),
     });
     if (res.ok) {
       const data = await res.json();
       setMessages((m) => [...m, data.message]);
-      setChatText("");
     }
   }
 
@@ -218,20 +214,12 @@ export default function ListingDetailPage() {
       )}
 
       {!isOwner && (
-        <div className="chat-box">
-          <div className="chat-messages">
-            {messages.length === 0 && <p style={{ color: "var(--text-soft)", fontSize: 13 }}>Say hi to {listing.seller.name.split(" ")[0]} to ask questions or arrange a meetup.</p>}
-            {messages.map((m) => (
-              <div key={m.id} className={`msg ${m.senderId === currentUserId ? "me" : "them"}`}>
-                {m.body}
-              </div>
-            ))}
-          </div>
-          <form className="chat-input-row" onSubmit={sendMessage}>
-            <input placeholder="Type a message…" value={chatText} onChange={(e) => setChatText(e.target.value)} />
-            <button className="btn" type="submit">Send</button>
-          </form>
-        </div>
+        <ChatBox
+          messages={messages}
+          currentUserId={currentUserId}
+          emptyHint={`Say hi to ${listing.seller.name.split(" ")[0]} to ask questions or arrange a meetup.`}
+          onSend={sendMessage}
+        />
       )}
     </div>
   );

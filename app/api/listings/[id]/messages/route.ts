@@ -35,8 +35,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
-  const { body } = await req.json();
-  if (!body || !body.trim()) {
+  const { body, attachmentUrl, attachmentType } = await req.json();
+  const trimmedBody = typeof body === "string" ? body.trim() : "";
+  const hasAttachment = attachmentUrl && ["image", "audio"].includes(attachmentType);
+
+  if (!trimmedBody && !hasAttachment) {
     return NextResponse.json({ error: "Message can't be empty" }, { status: 400 });
   }
 
@@ -50,7 +53,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const [message] = await prisma.$transaction([
     prisma.message.create({
-      data: { conversationId: conversation.id, senderId: user.id, body: body.trim().slice(0, 2000) },
+      data: {
+        conversationId: conversation.id,
+        senderId: user.id,
+        body: trimmedBody ? trimmedBody.slice(0, 2000) : null,
+        attachmentUrl: hasAttachment ? attachmentUrl : null,
+        attachmentType: hasAttachment ? attachmentType : null,
+      },
       include: { sender: { select: { id: true, name: true } } },
     }),
     prisma.conversation.update({ where: { id: conversation.id }, data: { lastMessageAt: new Date() } }),

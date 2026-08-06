@@ -55,7 +55,7 @@ export default function NavBar({ user }: { user: User }) {
             if (!seenMessageIds.current.has(key)) {
               seenMessageIds.current.add(key);
               new Notification(`New message from ${c.otherParty.name}`, {
-                body: c.lastMessage.body,
+                body: c.lastMessage.body || (c.lastMessage.attachmentType === "image" ? "📷 Sent a photo" : "🎤 Sent a voice message"),
                 tag: c.id,
               });
             }

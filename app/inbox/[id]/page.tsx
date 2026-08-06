@@ -3,16 +3,15 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import ChatBox, { ChatMessage } from "@/components/ChatBox";
 
-type Message = { id: string; body: string; senderId: string; sender: { name: string } };
 type ConversationInfo = { listing: { id: string; title: string }; buyer: { id: string; name: string } };
 
 export default function ConversationPage() {
   const { id } = useParams<{ id: string }>();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [info, setInfo] = useState<ConversationInfo | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [text, setText] = useState("");
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -33,18 +32,15 @@ export default function ConversationPage() {
     return () => clearInterval(poll);
   }, [load]);
 
-  async function sendMessage(e: React.FormEvent) {
-    e.preventDefault();
-    if (!text.trim()) return;
+  async function sendMessage(payload: { body?: string; attachmentUrl?: string; attachmentType?: "image" | "audio" }) {
     const res = await fetch(`/api/conversations/${id}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body: text }),
+      body: JSON.stringify(payload),
     });
     if (res.ok) {
       const data = await res.json();
       setMessages((m) => [...m, data.message]);
-      setText("");
     }
   }
 
@@ -58,20 +54,7 @@ export default function ConversationPage() {
       )}
       {error && <div className="error-msg">{error}</div>}
 
-      <div className="chat-box" style={{ height: 480 }}>
-        <div className="chat-messages">
-          {messages.length === 0 && <p style={{ color: "var(--text-soft)", fontSize: 13 }}>No messages yet — say hi.</p>}
-          {messages.map((m) => (
-            <div key={m.id} className={`msg ${m.senderId === currentUserId ? "me" : "them"}`}>
-              {m.body}
-            </div>
-          ))}
-        </div>
-        <form className="chat-input-row" onSubmit={sendMessage}>
-          <input placeholder="Type a message…" value={text} onChange={(e) => setText(e.target.value)} />
-          <button className="btn" type="submit">Send</button>
-        </form>
-      </div>
+      <ChatBox messages={messages} currentUserId={currentUserId} emptyHint="No messages yet — say hi." onSend={sendMessage} />
     </div>
   );
 }

@@ -9,7 +9,7 @@ type ConversationSummary = {
   listing: { id: string; title: string; emoji: string; photoUrl: string | null; photoUrls: string[] };
   otherParty: { id: string; name: string };
   role: "buyer" | "seller";
-  lastMessage: { body: string; createdAt: string } | null;
+  lastMessage: { body: string | null; attachmentType: string | null; createdAt: string } | null;
   lastMessageAt: string;
   unreadCount: number;
 };
@@ -113,7 +113,7 @@ export default function InboxPage() {
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                       }}
                     >
-                      {c.lastMessage.body}
+                      {c.lastMessage.body || (c.lastMessage.attachmentType === "image" ? "📷 Photo" : c.lastMessage.attachmentType === "audio" ? "🎤 Voice message" : "")}
                     </div>
                   )}
                 </div>

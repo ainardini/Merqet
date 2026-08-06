@@ -114,8 +114,11 @@ model Conversation {
 
 model Message {
   id        String   @id @default(cuid())
-  body      String
+  body      String? // optional now — a message can be just a photo or voice note
   createdAt DateTime @default(now())
+
+  attachmentUrl  String? // uploaded via Vercel Blob, same as listing photos
+  attachmentType String? // "image" or "audio"
 
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
