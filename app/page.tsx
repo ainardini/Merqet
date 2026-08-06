@@ -18,7 +18,7 @@ type Listing = {
   photoUrl: string | null;
   photoUrls: string[];
   status: string;
-  seller: { name: string };
+  seller: { id: string; name: string };
   offers: { id: string; amount: number; status: string }[];
 };
 
@@ -27,6 +27,11 @@ export default function HomePage() {
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me").then((r) => r.json()).then((d) => setCurrentUserId(d.user?.id || null));
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(load, 300); // debounce so we don't hit the API on every keystroke
@@ -96,6 +101,7 @@ export default function HomePage() {
         <div className="board">
           {listings.map((item) => {
             const myOffer = item.offers?.[0];
+            const isMine = item.seller.id === currentUserId;
             return (
               <Link href={`/listings/${item.id}`} key={item.id} className="card" style={{ textDecoration: "none" }}>
                 <div className="thumb" style={getListingPhotos(item)[0] ? { padding: 0, overflow: "hidden" } : undefined}>
@@ -112,11 +118,14 @@ export default function HomePage() {
                   <div className="price-label">Price</div>
                   <div className="price">{formatPrice(item.price, item.currency)}</div>
                 </div>
-                <div className="seller-line">Sold by <b>{item.seller.name}</b></div>
-                {item.status === "reserved" && (
+                <div className="seller-line">Sold by <b>{isMine ? "you" : item.seller.name}</b></div>
+                {isMine && (
+                  <div className="offer-status" style={{ borderColor: "var(--accent)", color: "var(--accent)" }}>Your listing</div>
+                )}
+                {!isMine && item.status === "reserved" && (
                   <div className="offer-status pending">Reserved by another buyer</div>
                 )}
-                {myOffer && myOffer.status === "pending" && (
+                {!isMine && myOffer && myOffer.status === "pending" && (
                   <div className="offer-status pending">Your offer: {formatPrice(myOffer.amount, item.currency)} — pending</div>
                 )}
               </Link>

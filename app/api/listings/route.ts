@@ -13,7 +13,6 @@ export async function GET(req: NextRequest) {
   const listings = await prisma.listing.findMany({
     where: {
       status: { not: "sold" },
-      ...(user ? { sellerId: { not: user.id } } : {}),
       ...(category && category !== "All" ? { category } : {}),
       ...(search
         ? {
@@ -25,7 +24,7 @@ export async function GET(req: NextRequest) {
         : {}),
     },
     include: {
-      seller: { select: { name: true } },
+      seller: { select: { id: true, name: true } },
       offers: user ? { where: { buyerId: user.id } } : false,
     },
     orderBy: { createdAt: "desc" },
