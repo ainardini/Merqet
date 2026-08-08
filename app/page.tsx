@@ -55,11 +55,11 @@ export default function HomePage() {
         Buy &amp; sell on campus
       </h1>
       <p className="subtitle">Chat, agree on a price, meet up, pay however you like.</p>
-      <div className="cash-note">💵 No online payments — pay in person, your way</div>
+      <div className="cash-note">💵 Pay in person, do it your own way</div>
 
       <input
         type="text"
-        placeholder="Search for textbooks, furniture, anything..."
+        placeholder="Search here"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         style={{
