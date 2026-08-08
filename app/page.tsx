@@ -52,7 +52,7 @@ export default function HomePage() {
   return (
     <>
       <h1 className="page-title">
-        Buy &amp; sell on campus
+        Online Flea Market
       </h1>
       <p className="subtitle">Chat, agree on a price, meet up, pay however you like.</p>
       <div className="cash-note">💵 Pay in person, do it your own way</div>
