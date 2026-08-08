@@ -34,7 +34,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(load, 300); // debounce so we don't hit the API on every keystroke
+    const t = setTimeout(load, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, search]);
@@ -51,50 +51,58 @@ export default function HomePage() {
 
   return (
     <>
-      <h1 className="page-title">
-        Online Flea Market
-      </h1>
-      <p className="subtitle">Chat, agree on a price, meet up, pay however you like.</p>
-      <div className="cash-note">Pay in person, do it your own way</div>
+      <div style={{ textAlign: "center", padding: "40px 0 20px" }}>
+        <h1 className="page-title" style={{ margin: "0 0 6px" }}>Online Flea Market</h1>
+        <p className="subtitle" style={{ marginBottom: 24 }}>Pay in person, do it your own way</p>
 
-      <input
-        type="text"
-        placeholder="Search here"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        style={{
-          width: "100%",
-          maxWidth: 420,
-          border: "1.5px solid var(--border)",
-          borderRadius: 10,
-          padding: "10px 14px",
-          fontFamily: "var(--font-body)",
-          fontSize: 14,
-          marginTop: 20,
-          background: "var(--surface)",
-          color: "var(--text)",
-        }}
-      />
+        <input
+          type="text"
+          placeholder="Search here"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            width: "100%",
+            maxWidth: 460,
+            border: "1.5px solid var(--border)",
+            borderRadius: 999,
+            padding: "12px 20px",
+            fontFamily: "var(--font-body)",
+            fontSize: 14,
+            background: "var(--surface)",
+            color: "var(--text)",
+          }}
+        />
+        <div className="hint" style={{ marginTop: 8, marginBottom: 20 }}>
+          Search items by name, category, or seller
+        </div>
 
-      <div className="filters">
-        {CATEGORIES.map((c) => (
-          <button
-            key={c}
-            className={`chip ${c === category ? "active" : ""}`}
-            onClick={() => setCategory(c)}
-          >
-            {c}
-          </button>
-        ))}
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          style={{
+            border: "1.5px solid var(--border)",
+            borderRadius: 999,
+            padding: "8px 18px",
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            fontWeight: 600,
+            background: "var(--surface)",
+            color: "var(--text)",
+          }}
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c} value={c}>{c === "All" ? "All categories" : c}</option>
+          ))}
+        </select>
       </div>
 
       {loading ? (
-        <p style={{ color: "var(--text-soft)" }}>Loading listings…</p>
+        <p style={{ color: "var(--text-soft)", textAlign: "center" }}>Loading listings…</p>
       ) : listings.length === 0 ? (
         <div className="board">
           <div className="empty-state">
             <div className="big">{search ? "No matches found" : "Nothing posted here yet"}</div>
-            <div>{search ? `Try a different search term.` : "Be the first to list something in this category."}</div>
+            <div>{search ? "Try a different search term." : "Be the first to list something in this category."}</div>
           </div>
         </div>
       ) : (
