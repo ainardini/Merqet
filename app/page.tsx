@@ -55,7 +55,7 @@ export default function HomePage() {
         Online Flea Market
       </h1>
       <p className="subtitle">Chat, agree on a price, meet up, pay however you like.</p>
-      <div className="cash-note">💵 Pay in person, do it your own way</div>
+      <div className="cash-note">Pay in person, do it your own way</div>
 
       <input
         type="text"
