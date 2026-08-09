@@ -28,6 +28,7 @@ model User {
   conversationsAsBuyer  Conversation[]     @relation("BuyerConversations")
   conversationReads     ConversationRead[]
   verificationCodes     VerificationCode[]
+  favorites             Favorite[]
 }
 
 // Short-lived one-time codes emailed to the user to verify they own the
@@ -68,6 +69,7 @@ model Listing {
 
   offers        Offer[]
   conversations Conversation[]
+  favoritedBy   Favorite[]
 
   // Set when an offer is accepted; cleared when confirmed, cancelled, or expired.
   reservedOfferId String?
@@ -141,4 +143,17 @@ model ConversationRead {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([conversationId, userId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
 }

@@ -9,6 +9,12 @@ export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
   const category = req.nextUrl.searchParams.get("category");
   const search = req.nextUrl.searchParams.get("q")?.trim();
+  const sort = req.nextUrl.searchParams.get("sort") || "newest";
+
+  const orderBy =
+    sort === "price_low" ? { price: "asc" as const } :
+    sort === "price_high" ? { price: "desc" as const } :
+    { createdAt: "desc" as const };
 
   const listings = await prisma.listing.findMany({
     where: {
@@ -26,11 +32,19 @@ export async function GET(req: NextRequest) {
     include: {
       seller: { select: { id: true, name: true } },
       offers: user ? { where: { buyerId: user.id } } : false,
+      favoritedBy: user ? { where: { userId: user.id }, select: { id: true } } : false,
+      _count: { select: { favoritedBy: true } },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy,
   });
 
-  return NextResponse.json({ listings });
+  const withFavorites = listings.map((l: (typeof listings)[number]) => ({
+    ...l,
+    isFavorited: user ? l.favoritedBy.length > 0 : false,
+    favoriteCount: l._count.favoritedBy,
+  }));
+
+  return NextResponse.json({ listings: withFavorites });
 }
 
 const VALID_CATEGORIES = ["Furniture", "Clothes", "Accessories", "Electronics", "Beauty", "Others"];

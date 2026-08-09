@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { formatPrice } from "@/lib/currency";
 import { getListingPhotos } from "@/lib/photos";
 
@@ -121,6 +122,7 @@ export default function MyListingsPage() {
                       </div>
                     )}
                     <div className="btn-row">
+                      <Link href={`/listings/${item.id}/edit`} className="btn">Edit</Link>
                       <button className="btn" onClick={() => deleteListing(item.id, item.title)}>Delete</button>
                       <button className="btn btn-primary" onClick={() => markSold(item.id, item.title)}>Mark as sold</button>
                     </div>

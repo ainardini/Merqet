@@ -101,6 +101,7 @@ export default function NavBar({ user }: { user: User }) {
               )}
             </Link>
             <Link href="/my-listings">My Lists</Link>
+            <Link href="/favorites">Favorites</Link>
             <Link href="/listings/new" className="btn btn-primary">
               + Start Sell
             </Link>

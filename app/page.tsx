@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/currency";
 import { getListingPhotos } from "@/lib/photos";
 
 const CATEGORIES = ["All", "Furniture", "Clothes", "Accessories", "Electronics", "Beauty", "Others"];
+const SORTS = [
+  { value: "newest", label: "Newest first" },
+  { value: "price_low", label: "Price: low to high" },
+  { value: "price_high", label: "Price: high to low" },
+];
 
 type Listing = {
   id: string;
@@ -20,11 +25,26 @@ type Listing = {
   status: string;
   seller: { id: string; name: string };
   offers: { id: string; amount: number; status: string }[];
+  isFavorited: boolean;
+  favoriteCount: number;
+};
+
+const pillStyle = {
+  border: "1.5px solid var(--border)",
+  borderRadius: 999,
+  padding: "8px 18px",
+  fontFamily: "var(--font-body)",
+  fontSize: 13,
+  fontWeight: 600,
+  background: "var(--surface)",
+  color: "var(--text)",
 };
 
 export default function HomePage() {
+  const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
   const [category, setCategory] = useState("All");
+  const [sort, setSort] = useState("newest");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -37,16 +57,33 @@ export default function HomePage() {
     const t = setTimeout(load, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, search]);
+  }, [category, sort, search]);
 
   async function load() {
     setLoading(true);
-    const params = new URLSearchParams({ category });
+    const params = new URLSearchParams({ category, sort });
     if (search.trim()) params.set("q", search.trim());
     const res = await fetch(`/api/listings?${params.toString()}`);
     const data = await res.json();
     setListings(data.listings || []);
     setLoading(false);
+  }
+
+  async function toggleFavorite(e: React.MouseEvent, item: Listing) {
+    e.stopPropagation();
+    if (!currentUserId) {
+      router.push("/login");
+      return;
+    }
+    const method = item.isFavorited ? "DELETE" : "POST";
+    await fetch(`/api/listings/${item.id}/favorite`, { method });
+    setListings((prev) =>
+      prev.map((l) =>
+        l.id === item.id
+          ? { ...l, isFavorited: !l.isFavorited, favoriteCount: l.favoriteCount + (l.isFavorited ? -1 : 1) }
+          : l
+      )
+    );
   }
 
   return (
@@ -76,24 +113,18 @@ export default function HomePage() {
           Search items by name, category, or seller
         </div>
 
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          style={{
-            border: "1.5px solid var(--border)",
-            borderRadius: 999,
-            padding: "8px 18px",
-            fontFamily: "var(--font-body)",
-            fontSize: 13,
-            fontWeight: 600,
-            background: "var(--surface)",
-            color: "var(--text)",
-          }}
-        >
-          {CATEGORIES.map((c) => (
-            <option key={c} value={c}>{c === "All" ? "All categories" : c}</option>
-          ))}
-        </select>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+          <select value={category} onChange={(e) => setCategory(e.target.value)} style={pillStyle}>
+            {CATEGORIES.map((c) => (
+              <option key={c} value={c}>{c === "All" ? "All categories" : c}</option>
+            ))}
+          </select>
+          <select value={sort} onChange={(e) => setSort(e.target.value)} style={pillStyle}>
+            {SORTS.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading ? (
@@ -111,7 +142,23 @@ export default function HomePage() {
             const myOffer = item.offers?.[0];
             const isMine = item.seller.id === currentUserId;
             return (
-              <Link href={`/listings/${item.id}`} key={item.id} className="card" style={{ textDecoration: "none" }}>
+              <div
+                key={item.id}
+                className="card"
+                onClick={() => router.push(`/listings/${item.id}`)}
+                style={{ cursor: "pointer", position: "relative" }}
+              >
+                <button
+                  onClick={(e) => toggleFavorite(e, item)}
+                  aria-label={item.isFavorited ? "Remove from favorites" : "Save to favorites"}
+                  style={{
+                    position: "absolute", top: 10, right: 10, zIndex: 2, background: "var(--bg)",
+                    border: "1px solid var(--border)", borderRadius: "50%", width: 30, height: 30,
+                    cursor: "pointer", fontSize: 15, color: item.isFavorited ? "var(--accent-2)" : "var(--text-soft)",
+                  }}
+                >
+                  {item.isFavorited ? "♥" : "♡"}
+                </button>
                 <div className="thumb" style={getListingPhotos(item)[0] ? { padding: 0, overflow: "hidden" } : undefined}>
                   {getListingPhotos(item)[0] ? (
                     <img src={getListingPhotos(item)[0]} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -136,7 +183,7 @@ export default function HomePage() {
                 {!isMine && myOffer && myOffer.status === "pending" && (
                   <div className="offer-status pending">Your offer: {formatPrice(myOffer.amount, item.currency)} — pending</div>
                 )}
-              </Link>
+              </div>
             );
           })}
         </div>

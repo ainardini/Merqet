@@ -10,7 +10,7 @@ type Offer = { id: string; amount: number; status: string; buyerId: string; buye
 type Listing = {
   id: string; title: string; description: string; category: string; condition: string;
   price: number; currency: string; meetupLocation: string | null; emoji: string; photoUrl: string | null; photoUrls: string[]; status: string; reservedUntil: string | null;
-  seller: { id: string; name: string }; offers: Offer[];
+  seller: { id: string; name: string }; offers: Offer[]; isFavorited: boolean; favoriteCount: number;
 };
 
 function timeLeft(reservedUntil: string | null) {
@@ -84,6 +84,21 @@ export default function ListingDetailPage() {
     load();
   }
 
+  async function toggleFavorite() {
+    if (!currentUserId) {
+      router.push("/login");
+      return;
+    }
+    if (!listing) return;
+    const method = listing.isFavorited ? "DELETE" : "POST";
+    await fetch(`/api/listings/${id}/favorite`, { method });
+    setListing({
+      ...listing,
+      isFavorited: !listing.isFavorited,
+      favoriteCount: listing.favoriteCount + (listing.isFavorited ? -1 : 1),
+    });
+  }
+
   async function sendMessage(payload: { body?: string; attachmentUrl?: string; attachmentType?: "image" | "audio" }) {
     const res = await fetch(`/api/listings/${id}/messages`, {
       method: "POST",
@@ -147,7 +162,19 @@ export default function ListingDetailPage() {
 
       <div className="category-tag">{listing.category}</div>
       <h1 style={{ fontSize: 26, margin: "6px 0" }}>{listing.title}</h1>
-      <div className="price" style={{ fontSize: 30, marginBottom: 6 }}>{formatPrice(listing.price, listing.currency)}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+        <div className="price" style={{ fontSize: 30 }}>{formatPrice(listing.price, listing.currency)}</div>
+        <button
+          onClick={toggleFavorite}
+          className="btn"
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px" }}
+        >
+          <span style={{ color: listing.isFavorited ? "var(--accent-2)" : "var(--text-soft)" }}>
+            {listing.isFavorited ? "♥" : "♡"}
+          </span>
+          {listing.favoriteCount > 0 ? listing.favoriteCount : "Save"}
+        </button>
+      </div>
       <p className="seller-line">Sold by <b>{listing.seller.name}</b></p>
       {listing.meetupLocation && (
         <p className="seller-line">Preferred meetup: <b>{listing.meetupLocation}</b></p>
@@ -209,7 +236,8 @@ export default function ListingDetailPage() {
 
       {isOwner && (
         <p className="hint" style={{ marginTop: 20 }}>
-          This is your listing — manage offers on it from <a href="/my-listings">My Lists</a>, and reply to buyers from your <a href="/inbox">Inbox</a>.
+          This is your listing — manage offers from <a href="/my-listings">My Lists</a>, reply to buyers from your <a href="/inbox">Inbox</a>
+          {listing.status === "available" && <> , or <a href={`/listings/${id}/edit`}>edit the details</a></>}.
         </p>
       )}
 
