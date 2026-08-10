@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/currency";
 import { getListingPhotos } from "@/lib/photos";
+import Image from "next/image";
 import ChatBox, { ChatMessage } from "@/components/ChatBox";
 import ReportBlockMenu from "@/components/ReportBlockMenu";
 import SafetyNudge from "@/components/SafetyNudge";
@@ -163,7 +164,7 @@ export default function ListingDetailPage() {
               }
             >
               {mainPhoto ? (
-                <img src={mainPhoto} alt={listing.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <Image src={mainPhoto} alt={listing.title} fill sizes="640px" style={{ objectFit: "cover" }} />
               ) : (
                 listing.emoji
               )}
@@ -172,13 +173,15 @@ export default function ListingDetailPage() {
             {photos.length > 1 && (
               <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
                 {photos.map((url, i) => (
-                  <img
+                  <Image
                     key={i}
                     src={url}
                     alt={`${listing.title} photo ${i + 1}`}
                     onClick={() => setActiveImageIndex(i)}
+                    width={56}
+                    height={56}
                     style={{
-                      width: 56, height: 56, objectFit: "cover", borderRadius: 8, cursor: "pointer",
+                      objectFit: "cover", borderRadius: 8, cursor: "pointer",
                       border: i === activeImageIndex ? "2px solid var(--accent)" : "1.5px solid var(--border)",
                     }}
                   />

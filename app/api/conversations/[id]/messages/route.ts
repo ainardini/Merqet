@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { markConversationRead } from "@/lib/conversations";
+import { markConversationRead, countUnread } from "@/lib/conversations";
 import { isBlockedEitherWay } from "@/lib/moderation";
+import { sendNewMessageEmail } from "@/lib/email";
 
 async function requireParticipant(conversationId: string, userId: string) {
   const conversation = await prisma.conversation.findUnique({
@@ -52,6 +53,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Message can't be empty" }, { status: 400 });
   }
 
+  // Check before creating: if the recipient already has unread messages here,
+  // they've already been notified — don't email again for every message in
+  // an active back-and-forth.
+  const alreadyHadUnread = (await countUnread(params.id, otherPartyId)) > 0;
+
   const [message] = await prisma.$transaction([
     prisma.message.create({
       data: {
@@ -67,6 +73,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   ]);
 
   await markConversationRead(params.id, user.id);
+
+  if (!alreadyHadUnread) {
+    prisma.user.findUnique({ where: { id: otherPartyId }, select: { email: true } }).then((recipient: { email: string } | null) => {
+      if (recipient) sendNewMessageEmail(recipient.email, user.name, conversation.listing.title).catch(() => {});
+    });
+  }
 
   return NextResponse.json({ message });
 }

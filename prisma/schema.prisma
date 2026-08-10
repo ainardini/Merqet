@@ -67,6 +67,7 @@ model Listing {
   emoji       String   @default("📦")
   photoUrl    String? // legacy single-photo field, kept for old listings created before multi-photo support
   photoUrls   String[] @default([]) // up to 5 photo URLs, uploaded via Vercel Blob; first one is the thumbnail
+  viewCount   Int      @default(0) // raw pageview counter, excludes the seller's own visits
   status      String   @default("available")
   createdAt   DateTime @default(now())
 

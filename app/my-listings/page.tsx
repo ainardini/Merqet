@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { formatPrice } from "@/lib/currency";
 import { getListingPhotos } from "@/lib/photos";
 
 type Offer = { id: string; amount: number; status: string; buyer: { name: string } };
 type Listing = {
   id: string; title: string; emoji: string; photoUrl: string | null; photoUrls: string[]; price: number; currency: string; status: string;
-  reservedUntil: string | null; offers: Offer[];
+  reservedUntil: string | null; offers: Offer[]; viewCount: number;
 };
 
 function timeLeft(reservedUntil: string | null) {
@@ -94,13 +95,16 @@ export default function MyListingsPage() {
               <div className="card" key={item.id}>
                 <div className="thumb" style={getListingPhotos(item)[0] ? { padding: 0, overflow: "hidden" } : undefined}>
                   {getListingPhotos(item)[0] ? (
-                    <img src={getListingPhotos(item)[0]} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <Image src={getListingPhotos(item)[0]} alt={item.title} fill sizes="260px" style={{ objectFit: "cover" }} />
                   ) : (
                     item.emoji
                   )}
                 </div>
                 <div className="item-title">{item.title}</div>
                 <div className="price">{formatPrice(item.price, item.currency)}</div>
+                <div className="hint" style={{ margin: "-4px 0 0" }}>
+                  <i>{item.viewCount} view{item.viewCount === 1 ? "" : "s"}</i>
+                </div>
 
                 {item.status === "sold" && <span className="sold-badge">SOLD</span>}
 

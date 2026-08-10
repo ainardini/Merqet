@@ -24,6 +24,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  if (user?.id !== listing.sellerId) {
+    // Fire-and-forget — a view count off by one from a race is fine, no need to block the response on it.
+    prisma.listing.update({ where: { id: params.id }, data: { viewCount: { increment: 1 } } }).catch(() => {});
+  }
+
   const myReview = user
     ? await prisma.review.findUnique({ where: { listingId_reviewerId: { listingId: params.id, reviewerId: user.id } } })
     : null;

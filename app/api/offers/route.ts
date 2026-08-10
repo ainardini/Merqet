@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { expireIfNeeded } from "@/lib/offers";
 import { isBlockedEitherWay } from "@/lib/moderation";
+import { sendNewOfferEmail } from "@/lib/email";
+import { formatPrice } from "@/lib/currency";
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
@@ -38,6 +40,11 @@ export async function POST(req: NextRequest) {
 
   const offer = await prisma.offer.create({
     data: { listingId, buyerId: user.id, amount: amountNum },
+  });
+
+  // Best-effort notification — don't let an email failure break offer creation.
+  prisma.user.findUnique({ where: { id: listing.sellerId }, select: { email: true } }).then((seller: { email: string } | null) => {
+    if (seller) sendNewOfferEmail(seller.email, listing.title, formatPrice(amountNum, listing.currency), listing.id).catch(() => {});
   });
 
   return NextResponse.json({ offer });

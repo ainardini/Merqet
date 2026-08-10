@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { OFFER_WINDOW_HOURS } from "@/lib/offers";
+import { sendOfferAcceptedEmail } from "@/lib/email";
+import { formatPrice } from "@/lib/currency";
 
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser();
@@ -32,6 +34,10 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       data: { status: "reserved", reservedOfferId: offer.id, reservedUntil },
     }),
   ]);
+
+  prisma.user.findUnique({ where: { id: offer.buyerId }, select: { email: true } }).then((buyer: { email: string } | null) => {
+    if (buyer) sendOfferAcceptedEmail(buyer.email, offer.listing.title, formatPrice(offer.amount, offer.listing.currency), offer.listingId).catch(() => {});
+  });
 
   return NextResponse.json({ ok: true, reservedUntil });
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getListingPhotos } from "@/lib/photos";
 
 type ConversationSummary = {
@@ -89,7 +90,7 @@ export default function InboxPage() {
               >
                 <div className="thumb" style={{ width: 52, height: 52, flexShrink: 0, fontSize: 24, ...(photo ? { padding: 0, overflow: "hidden" } : {}) }}>
                   {photo ? (
-                    <img src={photo} alt={c.listing.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <Image src={photo} alt={c.listing.title} fill sizes="52px" style={{ objectFit: "cover" }} />
                   ) : (
                     c.listing.emoji
                   )}

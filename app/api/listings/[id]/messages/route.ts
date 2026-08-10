@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { getOrCreateConversation, markConversationRead } from "@/lib/conversations";
+import { getOrCreateConversation, markConversationRead, countUnread } from "@/lib/conversations";
 import { isBlockedEitherWay } from "@/lib/moderation";
+import { sendNewMessageEmail } from "@/lib/email";
 
 // This route is used by the buyer-facing chat box embedded on a listing's
 // detail page. It's just a convenience wrapper around that buyer's single
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   const conversation = await getOrCreateConversation(params.id, user.id);
+  const alreadyHadUnread = (await countUnread(conversation.id, listing.sellerId)) > 0;
 
   const [message] = await prisma.$transaction([
     prisma.message.create({
@@ -70,6 +72,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   ]);
 
   await markConversationRead(conversation.id, user.id);
+
+  if (!alreadyHadUnread) {
+    prisma.user.findUnique({ where: { id: listing.sellerId }, select: { email: true } }).then((seller: { email: string } | null) => {
+      if (seller) sendNewMessageEmail(seller.email, user.name, listing.title).catch(() => {});
+    });
+  }
 
   return NextResponse.json({ message });
 }

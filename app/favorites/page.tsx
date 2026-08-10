@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { formatPrice } from "@/lib/currency";
 import { getListingPhotos } from "@/lib/photos";
 
@@ -71,7 +72,7 @@ export default function FavoritesPage() {
               <Link href={`/listings/${item.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                 <div className="thumb" style={getListingPhotos(item)[0] ? { padding: 0, overflow: "hidden" } : undefined}>
                   {getListingPhotos(item)[0] ? (
-                    <img src={getListingPhotos(item)[0]} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <Image src={getListingPhotos(item)[0]} alt={item.title} fill sizes="260px" style={{ objectFit: "cover" }} />
                   ) : (
                     item.emoji
                   )}
