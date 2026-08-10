@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { getOrCreateConversation, markConversationRead } from "@/lib/conversations";
+import { isBlockedEitherWay } from "@/lib/moderation";
 
 // This route is used by the buyer-facing chat box embedded on a listing's
 // detail page. It's just a convenience wrapper around that buyer's single
@@ -47,6 +48,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!listing) return NextResponse.json({ error: "Listing not found" }, { status: 404 });
   if (listing.sellerId === user.id) {
     return NextResponse.json({ error: "Sellers should reply from the Inbox" }, { status: 400 });
+  }
+  if (await isBlockedEitherWay(user.id, listing.sellerId)) {
+    return NextResponse.json({ error: "You can't message this seller" }, { status: 403 });
   }
 
   const conversation = await getOrCreateConversation(params.id, user.id);

@@ -2,9 +2,12 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { formatPrice } from "@/lib/currency";
 import { getListingPhotos } from "@/lib/photos";
 import ChatBox, { ChatMessage } from "@/components/ChatBox";
+import ReportBlockMenu from "@/components/ReportBlockMenu";
+import SafetyNudge from "@/components/SafetyNudge";
 
 type Offer = { id: string; amount: number; status: string; buyerId: string; buyer?: { name: string } };
 type Listing = {
@@ -33,13 +36,24 @@ export default function ListingDetailPage() {
   const [toast, setToast] = useState("");
   const [tick, setTick] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [sellerRating, setSellerRating] = useState<{ average: number | null; count: number }>({ average: null, count: 0 });
+  const [myReview, setMyReview] = useState<{ id: string } | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/listings/${id}`);
     const data = await res.json();
     setListing(data.listing);
     setIsOwner(data.isOwner);
+    setMyReview(data.myReview);
     setActiveImageIndex(0);
+    if (data.listing?.seller?.id) {
+      fetch(`/api/users/${data.listing.seller.id}/reviews`)
+        .then((r) => r.json())
+        .then((d) => setSellerRating({ average: d.average, count: d.count }));
+    }
   }, [id]);
 
   useEffect(() => {
@@ -97,6 +111,21 @@ export default function ListingDetailPage() {
       isFavorited: !listing.isFavorited,
       favoriteCount: listing.favoriteCount + (listing.isFavorited ? -1 : 1),
     });
+  }
+
+  async function submitReview(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmittingReview(true);
+    const res = await fetch(`/api/listings/${id}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating: reviewRating, comment: reviewComment }),
+    });
+    const data = await res.json();
+    setSubmittingReview(false);
+    if (!res.ok) return showToast(data.error || "Couldn't submit review");
+    showToast("Thanks for the review!");
+    setMyReview(data.review);
   }
 
   async function sendMessage(payload: { body?: string; attachmentUrl?: string; attachmentType?: "image" | "audio" }) {
@@ -175,11 +204,25 @@ export default function ListingDetailPage() {
           {listing.favoriteCount > 0 ? listing.favoriteCount : "Save"}
         </button>
       </div>
-      <p className="seller-line">Sold by <b>{listing.seller.name}</b></p>
-      {listing.meetupLocation && (
-        <p className="seller-line">Preferred meetup: <b>{listing.meetupLocation}</b></p>
-      )}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <p className="seller-line">
+            Sold by <Link href={`/users/${listing.seller.id}`} style={{ textDecoration: "underline" }}><b>{listing.seller.name}</b></Link>
+            {sellerRating.count > 0 && (
+              <span style={{ color: "var(--text-soft)" }}> · <span style={{ color: "var(--accent)" }}>★</span> {sellerRating.average} ({sellerRating.count})</span>
+            )}
+          </p>
+          {listing.meetupLocation && (
+            <p className="seller-line">Preferred meetup: <b>{listing.meetupLocation}</b></p>
+          )}
+        </div>
+        {!isOwner && currentUserId && <ReportBlockMenu userId={listing.seller.id} listingId={listing.id} />}
+      </div>
       <p style={{ marginTop: 14, lineHeight: 1.6 }}>{listing.description}</p>
+
+      <div style={{ marginTop: 16 }}>
+        <SafetyNudge />
+      </div>
 
       {listing.status === "sold" && (
         <div style={{ marginTop: 20 }}><span className="sold-badge">SOLD</span></div>
@@ -211,6 +254,43 @@ export default function ListingDetailPage() {
       {myOffer?.status === "confirmed" && (
         <div className="confirmed-block" style={{ marginTop: 20 }}>
           Purchase confirmed — meet up with {listing.seller.name} to pay in person and pick it up.
+        </div>
+      )}
+
+      {listing.status === "sold" && myOffer?.status === "confirmed" && !myReview && (
+        <div className="form-card" style={{ marginTop: 20 }}>
+          <p style={{ fontWeight: 700, marginBottom: 10 }}>Rate your purchase</p>
+          <form onSubmit={submitReview}>
+            <div style={{ display: "flex", gap: 4, marginBottom: 12, fontSize: 24 }}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setReviewRating(n)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: n <= reviewRating ? "var(--accent)" : "var(--border)", padding: 0 }}
+                  aria-label={`${n} star${n === 1 ? "" : "s"}`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <textarea
+              placeholder="How was the transaction? (optional)"
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+              rows={3}
+              style={{ width: "100%", marginBottom: 12 }}
+            />
+            <button className="btn btn-primary" type="submit" disabled={submittingReview}>
+              {submittingReview ? "Submitting…" : "Submit review"}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {listing.status === "sold" && myReview && (
+        <div className="offer-status pending" style={{ marginTop: 20 }}>
+          You reviewed this purchase — thanks!
         </div>
       )}
 

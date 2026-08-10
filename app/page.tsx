@@ -27,6 +27,7 @@ type Listing = {
   offers: { id: string; amount: number; status: string }[];
   isFavorited: boolean;
   favoriteCount: number;
+  sellerRating: { average: number | null; count: number };
 };
 
 const pillStyle = {
@@ -173,7 +174,12 @@ export default function HomePage() {
                   <div className="price-label">Price</div>
                   <div className="price">{formatPrice(item.price, item.currency)}</div>
                 </div>
-                <div className="seller-line">Sold by <b>{isMine ? "you" : item.seller.name}</b></div>
+                <div className="seller-line">
+                  Sold by <b>{isMine ? "you" : item.seller.name}</b>
+                  {!isMine && item.sellerRating.count > 0 && (
+                    <span> · <span style={{ color: "var(--accent)" }}>★</span> {item.sellerRating.average}</span>
+                  )}
+                </div>
                 {isMine && (
                   <div className="offer-status" style={{ borderColor: "var(--accent)", color: "var(--accent)" }}>Your listing</div>
                 )}

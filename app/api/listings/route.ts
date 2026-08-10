@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { expireAllStale } from "@/lib/offers";
+import { getSellerRating } from "@/lib/moderation";
 
 export async function GET(req: NextRequest) {
   await expireAllStale();
@@ -16,9 +17,20 @@ export async function GET(req: NextRequest) {
     sort === "price_high" ? { price: "desc" as const } :
     { createdAt: "desc" as const };
 
+  // Hide listings from anyone the current user has blocked (or who has blocked them).
+  let blockedSellerIds: string[] = [];
+  if (user) {
+    const blocks = await prisma.block.findMany({
+      where: { OR: [{ blockerId: user.id }, { blockedId: user.id }] },
+      select: { blockerId: true, blockedId: true },
+    });
+    blockedSellerIds = blocks.map((b: { blockerId: string; blockedId: string }) => (b.blockerId === user.id ? b.blockedId : b.blockerId));
+  }
+
   const listings = await prisma.listing.findMany({
     where: {
       status: { not: "sold" },
+      ...(blockedSellerIds.length > 0 ? { sellerId: { notIn: blockedSellerIds } } : {}),
       ...(category && category !== "All" ? { category } : {}),
       ...(search
         ? {
@@ -38,11 +50,20 @@ export async function GET(req: NextRequest) {
     orderBy,
   });
 
-  const withFavorites = listings.map((l: (typeof listings)[number]) => ({
-    ...l,
-    isFavorited: user ? l.favoritedBy.length > 0 : false,
-    favoriteCount: l._count.favoritedBy,
-  }));
+  const ratingCache = new Map<string, { average: number | null; count: number }>();
+  const withFavorites = await Promise.all(
+    listings.map(async (l: (typeof listings)[number]) => {
+      if (!ratingCache.has(l.sellerId)) {
+        ratingCache.set(l.sellerId, await getSellerRating(l.sellerId));
+      }
+      return {
+        ...l,
+        isFavorited: user ? l.favoritedBy.length > 0 : false,
+        favoriteCount: l._count.favoritedBy,
+        sellerRating: ratingCache.get(l.sellerId),
+      };
+    })
+  );
 
   return NextResponse.json({ listings: withFavorites });
 }

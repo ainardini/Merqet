@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { markConversationRead } from "@/lib/conversations";
+import { isBlockedEitherWay } from "@/lib/moderation";
 
 async function requireParticipant(conversationId: string, userId: string) {
   const conversation = await prisma.conversation.findUnique({
@@ -37,6 +38,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const conversation = await requireParticipant(params.id, user.id);
   if (!conversation) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const otherPartyId = conversation.buyerId === user.id ? conversation.listing.sellerId : conversation.buyerId;
+  if (await isBlockedEitherWay(user.id, otherPartyId)) {
+    return NextResponse.json({ error: "You can't message this user" }, { status: 403 });
+  }
 
   const { body, attachmentUrl, attachmentType } = await req.json();
   const trimmedBody = typeof body === "string" ? body.trim() : "";

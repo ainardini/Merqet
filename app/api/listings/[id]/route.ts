@@ -24,6 +24,10 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   if (!listing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  const myReview = user
+    ? await prisma.review.findUnique({ where: { listingId_reviewerId: { listingId: params.id, reviewerId: user.id } } })
+    : null;
+
   const isOwner = user?.id === listing.sellerId;
   return NextResponse.json({
     listing: {
@@ -34,6 +38,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       favoriteCount: listing._count.favoritedBy,
     },
     isOwner,
+    myReview,
   });
 }
 

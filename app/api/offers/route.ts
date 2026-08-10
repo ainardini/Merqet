@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { expireIfNeeded } from "@/lib/offers";
+import { isBlockedEitherWay } from "@/lib/moderation";
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
@@ -19,6 +20,9 @@ export async function POST(req: NextRequest) {
   }
   if (listing.status !== "available") {
     return NextResponse.json({ error: "This listing isn't accepting offers right now" }, { status: 400 });
+  }
+  if (await isBlockedEitherWay(user.id, listing.sellerId)) {
+    return NextResponse.json({ error: "You can't make an offer on this listing" }, { status: 403 });
   }
 
   const amountNum = Math.round(Number(amount));

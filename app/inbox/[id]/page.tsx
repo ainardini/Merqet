@@ -4,8 +4,9 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import ChatBox, { ChatMessage } from "@/components/ChatBox";
+import ReportBlockMenu from "@/components/ReportBlockMenu";
 
-type ConversationInfo = { listing: { id: string; title: string }; buyer: { id: string; name: string } };
+type ConversationInfo = { listing: { id: string; sellerId: string; title: string }; buyer: { id: string; name: string } };
 
 export default function ConversationPage() {
   const { id } = useParams<{ id: string }>();
@@ -48,9 +49,17 @@ export default function ConversationPage() {
     <div style={{ maxWidth: 560, margin: "30px auto" }}>
       <Link href="/inbox" className="hint" style={{ display: "inline-block", marginBottom: 12 }}>← Back to Inbox</Link>
       {info && (
-        <p className="subtitle" style={{ marginBottom: 4 }}>
-          About: <Link href={`/listings/${info.listing.id}`}><b>{info.listing.title}</b></Link>
-        </p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+          <p className="subtitle" style={{ margin: 0 }}>
+            About: <Link href={`/listings/${info.listing.id}`}><b>{info.listing.title}</b></Link>
+          </p>
+          {currentUserId && (
+            <ReportBlockMenu
+              userId={info.buyer.id === currentUserId ? info.listing.sellerId : info.buyer.id}
+              listingId={info.listing.id}
+            />
+          )}
+        </div>
       )}
       {error && <div className="error-msg">{error}</div>}
 

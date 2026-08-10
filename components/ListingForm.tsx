@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CURRENCIES } from "@/lib/currency";
 import { MAX_LISTING_PHOTOS } from "@/lib/photos";
+import SafetyNudge from "@/components/SafetyNudge";
 
 const CONDITIONS = ["Like new", "Good", "Fair", "Well used"];
 const CATEGORIES = ["Furniture", "Clothes", "Accessories", "Electronics", "Beauty", "Others"];
@@ -192,6 +193,9 @@ export default function ListingForm({ initial }: { initial?: ListingFormInitial 
               value={form.meetupLocation}
               onChange={(e) => setForm({ ...form, meetupLocation: e.target.value })}
             />
+          </div>
+          <div className="field">
+            <SafetyNudge />
           </div>
           <div className="field">
             <label>Photos ({photos.length}/{MAX_LISTING_PHOTOS})</label>

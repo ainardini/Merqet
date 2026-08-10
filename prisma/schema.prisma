@@ -29,6 +29,12 @@ model User {
   conversationReads     ConversationRead[]
   verificationCodes     VerificationCode[]
   favorites             Favorite[]
+  reviewsGiven          Review[]           @relation("ReviewsGiven")
+  reviewsReceived       Review[]           @relation("ReviewsReceived")
+  reportsFiled          Report[]           @relation("ReportsFiled")
+  reportsReceived       Report[]           @relation("ReportsReceived")
+  blocksMade            Block[]            @relation("BlocksMade")
+  blocksReceived        Block[]            @relation("BlocksReceived")
 }
 
 // Short-lived one-time codes emailed to the user to verify they own the
@@ -70,6 +76,8 @@ model Listing {
   offers        Offer[]
   conversations Conversation[]
   favoritedBy   Favorite[]
+  reviews       Review[]
+  reports       Report[]
 
   // Set when an offer is accepted; cleared when confirmed, cancelled, or expired.
   reservedOfferId String?
@@ -156,4 +164,60 @@ model Favorite {
   listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@unique([userId, listingId])
+}
+
+// A buyer can review the seller once per listing, only after that listing
+// actually sold to them (checked in the API, not enforceable at the schema
+// level) — this keeps ratings tied to real completed transactions.
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int // 1-5
+  comment   String?
+  createdAt DateTime @default(now())
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  reviewerId String
+  reviewer   User   @relation("ReviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  revieweeId String
+  reviewee   User   @relation("ReviewsReceived", fields: [revieweeId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, reviewerId])
+}
+
+// status: "open" (default, needs review) | "dismissed" | "actioned"
+// No admin UI is built for these yet — they're stored so you can query them
+// directly in your database (or via Prisma Studio) until you build one.
+model Report {
+  id        String   @id @default(cuid())
+  reason    String
+  details   String?
+  status    String   @default("open")
+  createdAt DateTime @default(now())
+
+  reporterId String
+  reporter   User   @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  reportedUserId String
+  reportedUser   User   @relation("ReportsReceived", fields: [reportedUserId], references: [id], onDelete: Cascade)
+
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+}
+
+// A one-directional block: when A blocks B, A stops seeing B's listings and
+// neither can message or make offers to the other. B is not notified.
+model Block {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  blockerId String
+  blocker   User   @relation("BlocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
+
+  blockedId String
+  blocked   User   @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
 }
