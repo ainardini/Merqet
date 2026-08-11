@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { expireAllStale } from "@/lib/offers";
 import { getSellerRating } from "@/lib/moderation";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function GET(req: NextRequest) {
   await expireAllStale();
@@ -73,6 +74,10 @@ const VALID_CATEGORIES = ["Furniture", "Clothes", "Accessories", "Electronics", 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+
+  if (!(await checkRateLimit(`listing:${user.id}`, 10, 3600))) {
+    return NextResponse.json({ error: "You've posted a lot of listings recently — try again in a bit" }, { status: 429 });
+  }
 
   const { title, description, category, condition, price, currency, meetupLocation, photoUrls } = await req.json();
 

@@ -19,6 +19,7 @@ model User {
   passwordHash  String
   name          String
   campus        String?
+  avatarUrl     String?
   emailVerified Boolean  @default(false)
   createdAt     DateTime @default(now())
 
@@ -221,4 +222,16 @@ model Block {
   blocked   User   @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
 
   @@unique([blockerId, blockedId])
+}
+
+// Backs a simple sliding-window rate limiter (see lib/rateLimit.ts) without
+// needing a separate service like Redis — fine at this app's scale. Rows
+// accumulate over time; if this ever gets big, add a scheduled job to prune
+// rows older than your longest rate-limit window.
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
 }

@@ -89,10 +89,16 @@ transfer app in person — Merqet only handles discovery, offers, and chat.
   `.edu` used to provide is gone — worth deciding whether you want that back
   in some form (e.g. an invite-code system, or manually approving new signups
   at first) versus accepting a more open userbase.
-- **Add basic safety nudges** — e.g. a note on the listing page encouraging
-  meetups in public, well-lit campus spots (library, student center).
-- **Rate limit** the offer and message endpoints before this is public, so one
-  person can't spam offers or messages.
+- ~~Add basic safety nudges~~ — done, see `components/SafetyNudge.tsx`.
+- ~~Rate limit the offer and message endpoints~~ — done, see `lib/rateLimit.ts`.
+  It's a simple Postgres-backed sliding window (`RateLimitHit` table), not an
+  external service — fine at this scale, but note that rows accumulate over
+  time with no automatic cleanup. If that table ever gets large, add a
+  scheduled job to prune old rows.
+- **Reports have no admin UI yet** — they're stored in the `Report` table
+  (see `lib/moderation.ts` and `app/api/users/[id]/report`), but you'll need
+  to review them via Prisma Studio or a database client until you build a
+  moderation dashboard.
 
 ## Project structure
 

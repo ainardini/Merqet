@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-type User = { id: string; name: string; email: string } | null;
+type User = { id: string; name: string; email: string; avatarUrl?: string | null } | null;
 
 export default function NavBar({ user }: { user: User }) {
   const router = useRouter();
@@ -105,7 +106,25 @@ export default function NavBar({ user }: { user: User }) {
             <Link href="/listings/new" className="btn btn-primary">
               + Start Sell
             </Link>
-            <span style={{ color: "var(--text-soft)" }}>{user.name}</span>
+            <Link
+              href="/profile"
+              style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-soft)", textDecoration: "none" }}
+            >
+              <span
+                style={{
+                  width: 26, height: 26, borderRadius: "50%", overflow: "hidden", position: "relative",
+                  background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 11, fontWeight: 700, color: "var(--text)", flexShrink: 0,
+                }}
+              >
+                {user.avatarUrl ? (
+                  <Image src={user.avatarUrl} alt={user.name} fill sizes="26px" style={{ objectFit: "cover" }} />
+                ) : (
+                  user.name.charAt(0).toUpperCase()
+                )}
+              </span>
+              {user.name}
+            </Link>
             <button className="btn" onClick={handleLogout}>
               Log out
             </button>

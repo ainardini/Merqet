@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import ReportBlockMenu from "@/components/ReportBlockMenu";
 
-type User = { id: string; name: string; campus: string | null; createdAt: string };
+type User = { id: string; name: string; campus: string | null; avatarUrl: string | null; createdAt: string };
 type Review = { id: string; rating: number; comment: string | null; createdAt: string; reviewer: { name: string }; listing: { id: string; title: string } };
 
 function Stars({ rating }: { rating: number }) {
@@ -52,9 +53,18 @@ export default function SellerProfilePage() {
   return (
     <div style={{ maxWidth: 560, margin: "30px auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-        <div>
-          <h1 style={{ fontSize: 26, margin: 0 }}>{user.name}</h1>
-          {user.campus && <p className="hint" style={{ marginTop: 4 }}>{user.campus}</p>}
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", overflow: "hidden", position: "relative", background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, flexShrink: 0 }}>
+            {user.avatarUrl ? (
+              <Image src={user.avatarUrl} alt={user.name} fill sizes="56px" style={{ objectFit: "cover" }} />
+            ) : (
+              user.name.charAt(0).toUpperCase()
+            )}
+          </div>
+          <div>
+            <h1 style={{ fontSize: 26, margin: 0 }}>{user.name}</h1>
+            {user.campus && <p className="hint" style={{ marginTop: 4 }}>{user.campus}</p>}
+          </div>
         </div>
         {currentUserId && currentUserId !== user.id && <ReportBlockMenu userId={user.id} />}
       </div>

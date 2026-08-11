@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hashPassword, createVerificationCode } from "@/lib/auth";
 import { sendVerificationEmail } from "@/lib/email";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  if (!(await checkRateLimit(`signup:${ip}`, 8, 3600))) {
+    return NextResponse.json({ error: "Too many signup attempts from this network — try again later" }, { status: 429 });
+  }
+
   const { email, password, name, campus } = await req.json();
 
   if (!email || !password || !name) {

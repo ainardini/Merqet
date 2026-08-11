@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { markConversationRead, countUnread } from "@/lib/conversations";
 import { isBlockedEitherWay } from "@/lib/moderation";
 import { sendNewMessageEmail } from "@/lib/email";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 async function requireParticipant(conversationId: string, userId: string) {
   const conversation = await prisma.conversation.findUnique({
@@ -36,6 +37,10 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+
+  if (!(await checkRateLimit(`message:${user.id}`, 60, 300))) {
+    return NextResponse.json({ error: "You're sending messages too quickly — slow down a bit" }, { status: 429 });
+  }
 
   const conversation = await requireParticipant(params.id, user.id);
   if (!conversation) return NextResponse.json({ error: "Not found" }, { status: 404 });

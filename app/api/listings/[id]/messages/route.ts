@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getOrCreateConversation, markConversationRead, countUnread } from "@/lib/conversations";
 import { isBlockedEitherWay } from "@/lib/moderation";
 import { sendNewMessageEmail } from "@/lib/email";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 // This route is used by the buyer-facing chat box embedded on a listing's
 // detail page. It's just a convenience wrapper around that buyer's single
@@ -36,6 +37,10 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+
+  if (!(await checkRateLimit(`message:${user.id}`, 60, 300))) {
+    return NextResponse.json({ error: "You're sending messages too quickly — slow down a bit" }, { status: 429 });
+  }
 
   const { body, attachmentUrl, attachmentType } = await req.json();
   const trimmedBody = typeof body === "string" ? body.trim() : "";

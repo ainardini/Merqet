@@ -45,7 +45,7 @@ export async function getCurrentUser() {
     const payload = jwt.verify(token, JWT_SECRET) as { sub: string };
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, email: true, name: true, campus: true, emailVerified: true, createdAt: true },
+      select: { id: true, email: true, name: true, campus: true, avatarUrl: true, emailVerified: true, createdAt: true },
     });
     return user;
   } catch {

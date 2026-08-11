@@ -5,10 +5,15 @@ import { expireIfNeeded } from "@/lib/offers";
 import { isBlockedEitherWay } from "@/lib/moderation";
 import { sendNewOfferEmail } from "@/lib/email";
 import { formatPrice } from "@/lib/currency";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+
+  if (!(await checkRateLimit(`offer:${user.id}`, 15, 600))) {
+    return NextResponse.json({ error: "You're making offers too quickly — try again in a few minutes" }, { status: 429 });
+  }
 
   const { listingId, amount } = await req.json();
   if (!listingId || !amount) {
