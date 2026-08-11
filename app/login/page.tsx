@@ -60,6 +60,9 @@ export default function LoginPage() {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
+            <div className="hint" style={{ marginTop: 6 }}>
+              <Link href="/forgot-password">Forgot your password?</Link>
+            </div>
           </div>
           <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
             {loading ? "Logging in…" : "Log in"}

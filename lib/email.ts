@@ -58,6 +58,21 @@ export async function sendVerificationEmail(to: string, code: string) {
   );
 }
 
+export async function sendPasswordResetEmail(to: string, code: string) {
+  return send(
+    to,
+    `Your Merqet password reset code: ${code}`,
+    `
+      <div style="font-family: sans-serif; max-width: 420px; margin: 0 auto;">
+        <h2>Reset your password</h2>
+        <p>Enter this code to set a new password for your Merqet account:</p>
+        <p style="font-size: 32px; font-weight: 700; letter-spacing: 6px;">${code}</p>
+        <p style="color: #666; font-size: 13px;">This code expires in 10 minutes. If you didn't request this, you can safely ignore this email — your password won't be changed.</p>
+      </div>
+    `
+  );
+}
+
 export async function sendNewOfferEmail(to: string, listingTitle: string, amount: string, listingId: string) {
   return send(
     to,

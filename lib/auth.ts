@@ -45,7 +45,7 @@ export async function getCurrentUser() {
     const payload = jwt.verify(token, JWT_SECRET) as { sub: string };
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, email: true, name: true, campus: true, avatarUrl: true, emailVerified: true, createdAt: true },
+      select: { id: true, email: true, name: true, campus: true, avatarUrl: true, emailVerified: true, isAdmin: true, createdAt: true },
     });
     return user;
   } catch {
@@ -62,6 +62,11 @@ export async function requireUser() {
     });
   }
   return user;
+}
+
+export async function isCurrentUserAdmin() {
+  const user = await getCurrentUser();
+  return !!user?.isAdmin;
 }
 
 // ---- Email verification codes ----
@@ -124,4 +129,56 @@ export async function checkVerificationCode(userId: string, submitted: string) {
 
   await prisma.verificationCode.deleteMany({ where: { userId } });
   return { ok: true as const };
+}
+
+// ---- Password reset codes ----
+// Same shape as email verification codes above (hashed, expiring, attempt-
+// limited) but kept in a separate table so a password reset in flight can
+// never be confused with — or interfere with — a pending signup verification.
+
+export async function createPasswordResetCode(userId: string) {
+  const recent = await prisma.passwordResetCode.findFirst({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+  if (recent) {
+    const secondsSince = (Date.now() - recent.createdAt.getTime()) / 1000;
+    if (secondsSince < CODE_RESEND_COOLDOWN_SECONDS) {
+      throw new Error(`Please wait ${Math.ceil(CODE_RESEND_COOLDOWN_SECONDS - secondsSince)}s before requesting another code`);
+    }
+  }
+
+  const code = generateCode();
+  const codeHash = await bcrypt.hash(code, 8);
+  const expiresAt = new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000);
+
+  await prisma.passwordResetCode.deleteMany({ where: { userId } });
+  await prisma.passwordResetCode.create({ data: { userId, codeHash, expiresAt } });
+
+  return code;
+}
+
+export async function checkPasswordResetCode(userId: string, submitted: string) {
+  const record = await prisma.passwordResetCode.findFirst({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!record) return { ok: false as const, reason: "No code on file — request a new one" };
+  if (record.expiresAt < new Date()) return { ok: false as const, reason: "That code expired — request a new one" };
+  if (record.attempts >= MAX_CODE_ATTEMPTS) {
+    return { ok: false as const, reason: "Too many incorrect attempts — request a new code" };
+  }
+
+  const matches = await bcrypt.compare(submitted.trim(), record.codeHash);
+  if (!matches) {
+    await prisma.passwordResetCode.update({ where: { id: record.id }, data: { attempts: { increment: 1 } } });
+    return { ok: false as const, reason: "Incorrect code" };
+  }
+
+  return { ok: true as const, userId: record.userId };
+}
+
+export async function clearPasswordResetCodes(userId: string) {
+  await prisma.passwordResetCode.deleteMany({ where: { userId } });
 }

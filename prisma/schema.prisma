@@ -21,6 +21,7 @@ model User {
   campus        String?
   avatarUrl     String?
   emailVerified Boolean  @default(false)
+  isAdmin       Boolean  @default(false)
   createdAt     DateTime @default(now())
 
   listings              Listing[]
@@ -29,6 +30,7 @@ model User {
   conversationsAsBuyer  Conversation[]     @relation("BuyerConversations")
   conversationReads     ConversationRead[]
   verificationCodes     VerificationCode[]
+  passwordResetCodes    PasswordResetCode[]
   favorites             Favorite[]
   reviewsGiven          Review[]           @relation("ReviewsGiven")
   reviewsReceived       Review[]           @relation("ReviewsReceived")
@@ -42,6 +44,17 @@ model User {
 // address they signed up with. codeHash is bcrypt-hashed like a password —
 // codes are only 6 digits, but short expiry + attempt limits keep them safe.
 model VerificationCode {
+  id        String   @id @default(cuid())
+  codeHash  String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetCode {
   id        String   @id @default(cuid())
   codeHash  String
   attempts  Int      @default(0)

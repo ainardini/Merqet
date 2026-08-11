@@ -6,8 +6,14 @@ import Footer from "@/components/Footer";
 import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://merqet.vercel.app"),
   title: "Merqet",
   description: "Buy and sell used stuff with people on your own campus.",
+  openGraph: {
+    title: "Merqet",
+    description: "Buy and sell used stuff with people on your own campus.",
+    siteName: "Merqet",
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

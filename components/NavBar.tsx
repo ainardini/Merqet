@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-type User = { id: string; name: string; email: string; avatarUrl?: string | null } | null;
+type User = { id: string; name: string; email: string; avatarUrl?: string | null; isAdmin?: boolean } | null;
 
 export default function NavBar({ user }: { user: User }) {
   const router = useRouter();
@@ -102,6 +102,7 @@ export default function NavBar({ user }: { user: User }) {
               )}
             </Link>
             <Link href="/my-listings">My Lists</Link>
+            {user.isAdmin && <Link href="/admin/reports">Reports</Link>}
             <Link href="/favorites">Favorites</Link>
             <Link href="/listings/new" className="btn btn-primary">
               + Start Sell

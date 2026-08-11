@@ -12,6 +12,9 @@ export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get("category");
   const search = req.nextUrl.searchParams.get("q")?.trim();
   const sort = req.nextUrl.searchParams.get("sort") || "newest";
+  const condition = req.nextUrl.searchParams.get("condition");
+  const minPrice = req.nextUrl.searchParams.get("minPrice");
+  const maxPrice = req.nextUrl.searchParams.get("maxPrice");
 
   const orderBy =
     sort === "price_low" ? { price: "asc" as const } :
@@ -28,11 +31,17 @@ export async function GET(req: NextRequest) {
     blockedSellerIds = blocks.map((b: { blockerId: string; blockedId: string }) => (b.blockerId === user.id ? b.blockedId : b.blockerId));
   }
 
+  const priceFilter: { gte?: number; lte?: number } = {};
+  if (minPrice) priceFilter.gte = Number(minPrice);
+  if (maxPrice) priceFilter.lte = Number(maxPrice);
+
   const listings = await prisma.listing.findMany({
     where: {
       status: { not: "sold" },
       ...(blockedSellerIds.length > 0 ? { sellerId: { notIn: blockedSellerIds } } : {}),
       ...(category && category !== "All" ? { category } : {}),
+      ...(condition && condition !== "All" ? { condition } : {}),
+      ...(Object.keys(priceFilter).length > 0 ? { price: priceFilter } : {}),
       ...(search
         ? {
             OR: [

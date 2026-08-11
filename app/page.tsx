@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/currency";
 import { getListingPhotos } from "@/lib/photos";
 
 const CATEGORIES = ["All", "Furniture", "Clothes", "Accessories", "Electronics", "Beauty", "Others"];
+const CONDITIONS = ["All", "Like new", "Good", "Fair", "Well used"];
 const SORTS = [
   { value: "newest", label: "Newest first" },
   { value: "price_low", label: "Price: low to high" },
@@ -46,6 +47,9 @@ export default function HomePage() {
   const router = useRouter();
   const [listings, setListings] = useState<Listing[]>([]);
   const [category, setCategory] = useState("All");
+  const [condition, setCondition] = useState("All");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [sort, setSort] = useState("newest");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -59,11 +63,14 @@ export default function HomePage() {
     const t = setTimeout(load, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, sort, search]);
+  }, [category, condition, minPrice, maxPrice, sort, search]);
 
   async function load() {
     setLoading(true);
     const params = new URLSearchParams({ category, sort });
+    if (condition !== "All") params.set("condition", condition);
+    if (minPrice.trim()) params.set("minPrice", minPrice.trim());
+    if (maxPrice.trim()) params.set("maxPrice", maxPrice.trim());
     if (search.trim()) params.set("q", search.trim());
     const res = await fetch(`/api/listings?${params.toString()}`);
     const data = await res.json();
@@ -121,11 +128,36 @@ export default function HomePage() {
               <option key={c} value={c}>{c === "All" ? "All categories" : c}</option>
             ))}
           </select>
+          <select value={condition} onChange={(e) => setCondition(e.target.value)} style={pillStyle}>
+            {CONDITIONS.map((c) => (
+              <option key={c} value={c}>{c === "All" ? "Any condition" : c}</option>
+            ))}
+          </select>
           <select value={sort} onChange={(e) => setSort(e.target.value)} style={pillStyle}>
             {SORTS.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, justifyContent: "center", alignItems: "center", marginTop: 10 }}>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="Min price"
+            value={minPrice}
+            onChange={(e) => setMinPrice(e.target.value.replace(/[^0-9]/g, ""))}
+            style={{ ...pillStyle, width: 100, fontWeight: 400, fontFamily: "var(--font-mono)" }}
+          />
+          <span className="hint">to</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="Max price"
+            value={maxPrice}
+            onChange={(e) => setMaxPrice(e.target.value.replace(/[^0-9]/g, ""))}
+            style={{ ...pillStyle, width: 100, fontWeight: 400, fontFamily: "var(--font-mono)" }}
+          />
         </div>
       </div>
 
