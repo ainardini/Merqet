@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, verifyPassword, clearSessionCookie } from "@/lib/auth";
 import { getSellerRating } from "@/lib/moderation";
 
 export async function GET() {
@@ -37,4 +37,32 @@ export async function PATCH(req: NextRequest) {
   });
 
   return NextResponse.json({ user: updated });
+}
+
+// Deletes the account and, via cascading foreign keys, everything tied to
+// it: listings, offers, messages, reviews given/received, reports,
+// favorites, and blocks. Irreversible — requires the current password as
+// confirmation, since a valid session alone isn't enough for something this
+// destructive.
+export async function DELETE(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+
+  const { password } = await req.json();
+  if (!password) {
+    return NextResponse.json({ error: "Enter your password to confirm" }, { status: 400 });
+  }
+
+  const fullUser = await prisma.user.findUnique({ where: { id: user.id } });
+  if (!fullUser) return NextResponse.json({ error: "Account not found" }, { status: 404 });
+
+  const valid = await verifyPassword(password, fullUser.passwordHash);
+  if (!valid) {
+    return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
+  }
+
+  await prisma.user.delete({ where: { id: user.id } });
+  clearSessionCookie();
+
+  return NextResponse.json({ ok: true });
 }

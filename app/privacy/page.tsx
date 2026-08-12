@@ -65,8 +65,9 @@ export default function PrivacyPage() {
           <h2 style={{ fontSize: 16, marginTop: 24, marginBottom: 10 }}>Your data, your choices</h2>
           <p style={{ marginBottom: 16 }}>
             You can update your name, campus, and profile picture any time from your{" "}
-            <a href="/profile">Profile</a> page. If you'd like your account and data deleted, contact us and
-            we'll take care of it.
+            <a href="/profile">Profile</a> page. You can permanently delete your account and data any time
+            from the "Delete account" section at the bottom of that page — or contact us if you'd rather we
+            do it for you.
           </p>
 
           <h2 style={{ fontSize: 16, marginTop: 24, marginBottom: 10 }}>Children's privacy</h2>

@@ -25,6 +25,11 @@ export default function ProfilePage() {
   const [passwordError, setPasswordError] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     (async () => {
       const res = await fetch("/api/users/me");
@@ -101,6 +106,25 @@ export default function ProfilePage() {
     setCurrentPassword("");
     setNewPassword("");
     showToast("Password changed");
+  }
+
+  async function deleteAccount(e: React.FormEvent) {
+    e.preventDefault();
+    setDeleteError("");
+    setDeleting(true);
+    const res = await fetch("/api/users/me", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: deletePassword }),
+    });
+    const data = await res.json();
+    setDeleting(false);
+    if (!res.ok) {
+      setDeleteError(data.error || "Couldn't delete account");
+      return;
+    }
+    router.push("/");
+    router.refresh();
   }
 
   if (loading) return <p style={{ padding: 40 }}>Loading…</p>;
@@ -190,6 +214,41 @@ export default function ProfilePage() {
             {changingPassword ? "Changing…" : "Change password"}
           </button>
         </form>
+      </div>
+
+      {/* Danger zone */}
+      <div className="form-card" style={{ marginTop: 20, borderColor: "var(--danger)" }}>
+        <h2 style={{ fontSize: 16, marginBottom: 6, color: "var(--danger)" }}>Delete account</h2>
+        <p className="hint" style={{ marginBottom: 14 }}>
+          This permanently deletes your account, listings, offers, messages, and reviews. This can't be undone.
+        </p>
+
+        {!showDeleteConfirm ? (
+          <button className="btn" style={{ borderColor: "var(--danger)", color: "var(--danger)" }} onClick={() => setShowDeleteConfirm(true)}>
+            Delete my account
+          </button>
+        ) : (
+          <form onSubmit={deleteAccount}>
+            {deleteError && <div className="error-msg">{deleteError}</div>}
+            <div className="field">
+              <label>Enter your password to confirm</label>
+              <input required type="password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} />
+            </div>
+            <div className="btn-row">
+              <button type="button" className="btn" onClick={() => { setShowDeleteConfirm(false); setDeletePassword(""); setDeleteError(""); }}>
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn"
+                style={{ background: "var(--danger)", color: "white", borderColor: "var(--danger)" }}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting…" : "Permanently delete"}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

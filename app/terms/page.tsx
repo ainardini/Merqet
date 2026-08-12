@@ -85,7 +85,8 @@ export default function TermsPage() {
           <h2 style={{ fontSize: 16, marginTop: 24, marginBottom: 10 }}>9. Suspension and termination</h2>
           <p style={{ marginBottom: 16 }}>
             We may suspend or terminate your account if you violate these terms. You can stop using Merqet at
-            any time; contact us if you'd like your account and data deleted.
+            any time — you can permanently delete your account and data yourself from your Profile page,
+            or contact us if you'd rather we do it for you.
           </p>
 
           <h2 style={{ fontSize: 16, marginTop: 24, marginBottom: 10 }}>10. Changes to these terms</h2>
