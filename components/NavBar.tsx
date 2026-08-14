@@ -77,7 +77,8 @@ export default function NavBar({ user }: { user: User }) {
 
   return (
     <header className="site-header">
-      <Link href="/" className="logo">
+      <Link href="/" className="logo" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <Image src="/logo-icon.png" alt="" width={30} height={30} style={{ borderRadius: 7 }} />
         Mer<span>qet</span>
       </Link>
       <nav className="nav-links">
