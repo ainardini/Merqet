@@ -1,118 +1,140 @@
 # Merqet
 
-A campus-only marketplace: students list used items at a fixed price, buyers can
-chat or make an offer, sellers accept/reject offers, and accepted offers give the
-buyer 48 hours to confirm before the reservation expires and the item reopens.
-No payment processing — buyers and sellers pay each other in person.
+An online flea market for buying and selling with people around you. No shipping, no listing fees, no
+online payments — chat, agree on a price, meet up, and pay however you like, in person.
+
+Live at [merqet.site](https://www.merqet.site).
+
+## What's actually built
+
+This started as a simple prototype and grew into a fairly complete marketplace app. Here's everything
+that's in it today:
+
+**Accounts**
+- Email + password signup, with a 6-digit email verification code (hashed, expires in 10 minutes,
+  limited attempts) — works with any email provider, not restricted to `.edu`
+- Forgot password flow (same verification-code pattern, separate table so it can't collide with signup)
+- Profile page: edit name/campus, upload an avatar, change password, see your own stats (items sold,
+  bought, rating, review count)
+- Self-serve account deletion (cascades to everything you've created)
+
+**Listings**
+- Fixed-price listings with category (Furniture, Clothes, Accessories, Electronics, Beauty, Others),
+  condition, a preferred meetup location, and up to 5 photos
+- Price in MYR or KRW
+- Edit or delete a listing any time it's still available; manual "mark as sold" for sales that happen
+  outside a formal offer
+- Browse with search, category/condition filters, price range, and sort (newest / price)
+
+**Offers**
+- Buyers send a structured offer instead of just haggling in chat
+- Sellers see every pending offer on a listing and accept one — accepting auto-declines the rest
+- Accepted offers get a 48-hour window for the buyer to confirm, checked lazily on read (no cron job
+  needed) — if it lapses, the listing reopens automatically
+- Seller can cancel a reservation manually if a buyer never shows up
+
+**Chat**
+- Real per-(listing, buyer) conversations — not just per-listing. (Worth noting: the very first version of
+  this had a bug where two different buyers messaging the same seller about one listing would see each
+  other's messages. Fixed by properly modeling conversations.)
+- Text, photos, and voice notes (recorded in-browser)
+- A proper Inbox (`/inbox`) for both buying and selling conversations, with unread counts, read
+  receipts, and browser + email notifications (email is throttled to avoid spamming an active chat)
+
+**Trust & safety**
+- Seller ratings and reviews, tied to actual completed purchases (can't review without having bought)
+- Report and block users; blocking hides each other's listings and blocks new messages/offers both ways
+- Admin dashboard (`/admin/reports`) to review, dismiss, or action reports — gated by an `isAdmin` flag,
+  no self-serve way to grant it (see `npm run make-admin`)
+- A persistent meetup-safety nudge on listing pages
+
+**Other**
+- Favorites/wishlist
+- Rich link previews — pasting a listing link into WhatsApp/iMessage/Discord shows the real photo, title,
+  and price
+- Rate limiting on offers, messages, listings, and signups — a simple sliding-window counter backed by
+  Postgres, no external service needed
+- Vercel Analytics
+- Real Terms of Use, Privacy Policy, and About pages (not placeholders)
+- Custom domain (`merqet.site`) with a verified sending domain on Resend, so notification emails actually
+  reach real users, not just the account that owns the Resend key
 
 ## Stack
-- **Next.js 14** (App Router) + TypeScript — pages and API routes in one app
-- **Prisma + Postgres** for the database (get a free one from [Neon](https://neon.tech), Supabase, or Railway — the same connection string works for local dev and for your Vercel deployment)
-- **Cookie-based auth** with bcrypt password hashing and **email verification codes** — any email address can sign up, but the account is inactive until they enter the 6-digit code sent to that address
+
+- **Next.js 14** (App Router) + TypeScript
+- **Prisma + Postgres** (Neon, via Vercel's Postgres/Storage integration)
+- **Vercel Blob** for photo and voice note uploads
+- **Resend** for transactional email (verification codes, password resets, offer/message notifications)
+- **Vercel Analytics**
+- Cookie-based auth with bcrypt password hashing (no third-party auth provider)
 
 ## Run it locally
 
-1. Get a free Postgres database (Neon is the fastest: sign up, create a project, copy the connection string it gives you).
-2. Copy the env file and paste your connection string in:
-   ```bash
-   cp .env.example .env
-   ```
-   Edit `.env` and set `DATABASE_URL` to your Postgres connection string.
+1. Get a free Postgres database (Neon is fastest — sign up, create a project, copy the connection string).
+2. `cp .env.example .env` and fill in `DATABASE_URL` at minimum. Everything else has sensible fallbacks
+   for local dev (see the comments in `.env.example`).
 3. Install and set up the database:
    ```bash
    npm install
-   npm run db:push   # creates the tables from prisma/schema.prisma
-   npm run db:seed    # optional: adds two pre-verified demo users + four listings
+   npm run db:push
+   npm run db:seed    # optional demo data
    npm run dev
    ```
 
-Visit http://localhost:3000. If you seeded the database, log in as:
-- `mei@university.edu` / `password123`
-- `arjun@university.edu` / `password123`
+Without `RESEND_API_KEY` set, verification/reset codes just print to your terminal instead of emailing —
+fine for local dev.
 
-### Email verification codes
+## Useful scripts
 
-Without a `RESEND_API_KEY` set, verification codes are printed to your terminal
-instead of emailed — look for a line like `Verification code for you@x.com: 042917`
-after signing up. That's fine for local dev. For real emails:
+- `npm run make-admin -- you@example.com` — grants access to `/admin/reports`. No in-app way to do this
+  on purpose; admin access should be deliberate, not a toggle.
+- `npm run cleanup-test-data` — one-time script that removes the seed accounts and lists every listing in
+  the database so you can spot and remove leftover test junk before real users arrive.
+- `npm run db:seed` — demo data for local development.
 
-1. Sign up at [resend.com](https://resend.com) (free tier covers plenty of signups)
-2. Get an API key and put it in `.env` as `RESEND_API_KEY`
-3. Set `EMAIL_FROM` — Resend's sandbox domain (`onboarding@resend.dev`) works for
-   testing without any domain setup; verify your own domain with Resend before
-   going live so emails land reliably and don't look like spam
+## Known limitations / honest gaps
 
-## How the core flows work
-
-**Fixed-price listings.** Every item has a set price (`app/listings/new`). Buyers
-either chat with the seller or submit a structured offer — there's no bidding.
-
-**Offers.** A buyer's offer is a row in the `Offer` table with a status
-(`pending` → `accepted`/`rejected` → `confirmed`/`expired`). The seller sees all
-pending offers on their item in **My Listings** and can accept one — accepting
-automatically rejects every other pending offer on that listing (`app/api/offers/[id]/accept`).
-
-**The 48-hour window.** Accepting an offer sets `Listing.reservedUntil` 48 hours
-out and flips the listing to `reserved`. There's no cron job — instead,
-`lib/offers.ts#expireIfNeeded` checks the deadline every time a listing is read
-(browsing, viewing the detail page, or loading My Listings) and flips it back to
-`available` if the window has passed. This keeps things simple to deploy: no
-background workers needed. If you want it to happen exactly on time rather than
-"next time someone loads the page," add a scheduled job (e.g. a Vercel Cron Job)
-that calls `expireAllStale()` every few minutes.
-
-**No-shows.** Once a buyer confirms, the listing moves to `confirmed`. If they
-never show up to pay, the seller can hit **Buyer didn't show** in My Listings
-(`app/api/listings/[id]/cancel-reservation`), which reopens the listing with a
-clean slate. Once the meetup actually happens, the seller hits **Mark completed**
-to close it out.
-
-**No payments.** There is intentionally no payment integration anywhere in this
-codebase. The whole point is buyers and sellers exchange cash or their own bank
-transfer app in person — Merqet only handles discovery, offers, and chat.
-
-## Before this is real and public
-
-- **Change `JWT_SECRET`** in `.env` — the checked-in value is a placeholder for
-  local dev only.
-- **Set up `RESEND_API_KEY` in production** — without it, verification codes
-  only print to your server logs, which means real users can never actually
-  sign up. This is the one piece that's required, not optional, before launch.
-- **Use separate databases for dev and production** if you want to keep test
-  data separate — create a second Neon/Supabase project for production and
-  point Vercel's `DATABASE_URL` at that one instead of your local dev database.
-- **Deploy.** Push this to GitHub, then import it into Vercel — it detects
-  Next.js automatically. Add your `DATABASE_URL`, `JWT_SECRET`,
-  `RESEND_API_KEY`, and `EMAIL_FROM` as environment variables in the Vercel
-  dashboard.
-- **Since anyone with any email can now sign up**, the campus-only trust that
-  `.edu` used to provide is gone — worth deciding whether you want that back
-  in some form (e.g. an invite-code system, or manually approving new signups
-  at first) versus accepting a more open userbase.
-- ~~Add basic safety nudges~~ — done, see `components/SafetyNudge.tsx`.
-- ~~Rate limit the offer and message endpoints~~ — done, see `lib/rateLimit.ts`.
-  It's a simple Postgres-backed sliding window (`RateLimitHit` table), not an
-  external service — fine at this scale, but note that rows accumulate over
-  time with no automatic cleanup. If that table ever gets large, add a
-  scheduled job to prune old rows.
-- **Reports have no admin UI yet** — they're stored in the `Report` table
-  (see `lib/moderation.ts` and `app/api/users/[id]/report`), but you'll need
-  to review them via Prisma Studio or a database client until you build a
-  moderation dashboard.
+- **Price filtering isn't currency-aware.** The min/max price filter on Browse compares raw numbers
+  regardless of currency — filtering "under 50" mixes MYR and KRW listings together, which are wildly
+  different scales in reality. Fine while most listings cluster in one currency; would need real
+  attention if that changes.
+- **`RateLimitHit` rows accumulate with no automatic cleanup.** Fine at this scale; add a scheduled job
+  to prune old rows if that table ever gets large.
+- **Chat photo bubbles stay as plain `<img>`, not `next/image`.** They use `maxWidth`/`maxHeight` without
+  fixed dimensions so different photo shapes display naturally; converting to `next/image` would force a
+  square crop. Deliberate, not an oversight — same for the local-blob upload previews in the listing form.
+- **No push notifications when the site isn't open.** "Browser notifications" only work if you've already
+  had a tab open once; a real installable PWA with push would need more work.
 
 ## Project structure
 
 ```
 app/
-  api/            # all backend routes (auth, listings, offers, messages)
-  listings/       # browse detail + create-listing pages
+  api/            # all backend routes (auth, listings, offers, messages, conversations, admin, etc.)
+  listings/       # browse, listing detail, create/edit forms
+  inbox/          # conversation list + individual conversation view
   my-listings/    # seller dashboard
-  login/ signup/  # auth pages
+  favorites/      # saved listings
+  profile/        # account settings
+  users/[id]/     # public seller profile (reviews, rating)
+  admin/reports/  # report moderation dashboard
+  login/ signup/ forgot-password/ reset-password/
+  terms/ privacy/ about/ help/ contact/
 lib/
-  auth.ts         # password hashing, session cookies, getCurrentUser()
+  auth.ts         # password hashing, session cookies, email verification + password reset codes
   db.ts           # Prisma client singleton
-  offers.ts       # the 48h expiry logic
+  offers.ts       # the 48h offer-expiry logic (lazy, checked on read)
+  conversations.ts# conversation lookup, read-tracking, unread counts
+  moderation.ts   # block checks, seller rating aggregation
+  rateLimit.ts    # the Postgres-backed rate limiter
+  email.ts        # all transactional email templates, via Resend
+  currency.ts / photos.ts  # small formatting helpers
+components/
+  NavBar.tsx / Footer.tsx
+  ChatBox.tsx     # shared chat UI (text/photo/voice), used by both listing pages and Inbox
+  ListingForm.tsx # shared create/edit listing form
+  ReportBlockMenu.tsx / SafetyNudge.tsx
 prisma/
-  schema.prisma   # User, Listing, Offer, Message models
-  seed.js         # demo data
+  schema.prisma   # full data model
+  seed.js / make-admin.js / cleanup-test-data.js
 ```

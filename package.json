@@ -9,7 +9,8 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.js",
-    "make-admin": "node prisma/make-admin.js"
+    "make-admin": "node prisma/make-admin.js",
+    "cleanup-test-data": "node prisma/cleanup-test-data.js"
   },
   "dependencies": {
     "@prisma/client": "^5.19.1",
