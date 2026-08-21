@@ -15,27 +15,34 @@ type Props = {
   messages: ChatMessage[];
   currentUserId: string | null;
   emptyHint: string;
-  onSend: (payload: { body?: string; attachmentUrl?: string; attachmentType?: "image" | "audio" }) => Promise<void>;
+  onSend: (payload: { body?: string; attachmentUrl?: string; attachmentType?: "image" }) => Promise<void>;
 };
+
+function CameraIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M4 8.5C4 7.67157 4.67157 7 5.5 7H7.5L8.5 5H15.5L16.5 7H18.5C19.3284 7 20 7.67157 20 8.5V17.5C20 18.3284 19.3284 19 18.5 19H5.5C4.67157 19 4 18.3284 4 17.5V8.5Z"
+        stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"
+      />
+      <circle cx="12" cy="13" r="3.25" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
 
 export default function ChatBox({ messages, currentUserId, emptyHint, onSend }: Props) {
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  const [recording, setRecording] = useState(false);
-  const [recordSeconds, setRecordSeconds] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: "nearest" });
   }, [messages.length]);
 
-  async function uploadFile(file: File): Promise<{ url: string; kind: "image" | "audio" } | null> {
+  async function uploadFile(file: File): Promise<{ url: string; kind: "image" } | null> {
     setUploading(true);
     setError("");
     const fd = new FormData();
@@ -66,42 +73,6 @@ export default function ChatBox({ messages, currentUserId, emptyHint, onSend }: 
     if (result) await onSend({ attachmentUrl: result.url, attachmentType: "image" });
   }
 
-  async function startRecording() {
-    setError("");
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      chunksRef.current = [];
-      recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        const file = new File([blob], `voice-note-${Date.now()}.webm`, { type: "audio/webm" });
-        const result = await uploadFile(file);
-        if (result) await onSend({ attachmentUrl: result.url, attachmentType: "audio" });
-      };
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setRecording(true);
-      setRecordSeconds(0);
-      timerRef.current = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
-    } catch {
-      setError("Couldn't access your microphone — check your browser permissions.");
-    }
-  }
-
-  function stopRecording() {
-    mediaRecorderRef.current?.stop();
-    setRecording(false);
-    if (timerRef.current) clearInterval(timerRef.current);
-  }
-
-  function formatSeconds(s: number) {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec.toString().padStart(2, "0")}`;
-  }
-
   return (
     <div className="chat-box">
       <div className="chat-messages">
@@ -116,9 +87,6 @@ export default function ChatBox({ messages, currentUserId, emptyHint, onSend }: 
                   alt="Shared photo"
                   style={{ display: "block", maxWidth: 220, maxHeight: 220, borderRadius: 10, objectFit: "cover" }}
                 />
-              )}
-              {m.attachmentType === "audio" && m.attachmentUrl && (
-                <audio controls src={m.attachmentUrl} style={{ maxWidth: 220, height: 34 }} />
               )}
               {m.body && <div style={{ marginTop: m.attachmentUrl ? 6 : 0, padding: m.attachmentType === "image" ? "0 6px 4px" : 0 }}>{m.body}</div>}
             </div>
@@ -141,42 +109,20 @@ export default function ChatBox({ messages, currentUserId, emptyHint, onSend }: 
           type="button"
           className="btn"
           onClick={() => fileInputRef.current?.click()}
-          disabled={uploading || recording}
+          disabled={uploading}
           aria-label="Attach photo"
-          style={{ padding: "9px 12px" }}
+          style={{ padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "center" }}
         >
-          📷
+          <CameraIcon />
         </button>
 
-        {recording ? (
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={stopRecording}
-            style={{ padding: "9px 14px", display: "flex", alignItems: "center", gap: 6 }}
-          >
-            ⏹ {formatSeconds(recordSeconds)}
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="btn"
-            onClick={startRecording}
-            disabled={uploading}
-            aria-label="Record voice note"
-            style={{ padding: "9px 12px" }}
-          >
-            🎤
-          </button>
-        )}
-
         <input
-          placeholder={recording ? "Recording…" : uploading ? "Uploading…" : "Type a message…"}
+          placeholder={uploading ? "Uploading…" : "Type a message…"}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          disabled={recording || uploading}
+          disabled={uploading}
         />
-        <button className="btn" type="submit" disabled={recording || uploading || !text.trim()}>
+        <button className="btn" type="submit" disabled={uploading || !text.trim()}>
           Send
         </button>
       </form>
