@@ -9,6 +9,7 @@ import Image from "next/image";
 import ChatBox, { ChatMessage } from "@/components/ChatBox";
 import ReportBlockMenu from "@/components/ReportBlockMenu";
 import SafetyNudge from "@/components/SafetyNudge";
+import Lightbox from "@/components/Lightbox";
 
 type Offer = { id: string; amount: number; status: string; buyerId: string; buyer?: { name: string } };
 type Listing = {
@@ -37,6 +38,7 @@ export default function ListingDetailClient() {
   const [toast, setToast] = useState("");
   const [tick, setTick] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [sellerRating, setSellerRating] = useState<{ average: number | null; count: number }>({ average: null, count: 0 });
   const [myReview, setMyReview] = useState<{ id: string } | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
@@ -164,7 +166,9 @@ export default function ListingDetailClient() {
               }
             >
               {mainPhoto ? (
-                <Image src={mainPhoto} alt={listing.title} fill sizes="640px" style={{ objectFit: "cover" }} />
+                <div onClick={() => setLightboxOpen(true)} style={{ position: "absolute", inset: 0, cursor: "pointer" }}>
+                  <Image src={mainPhoto} alt={listing.title} fill sizes="640px" style={{ objectFit: "cover" }} />
+                </div>
               ) : (
                 listing.emoji
               )}
@@ -177,7 +181,7 @@ export default function ListingDetailClient() {
                     key={i}
                     src={url}
                     alt={`${listing.title} photo ${i + 1}`}
-                    onClick={() => setActiveImageIndex(i)}
+                    onClick={() => { setActiveImageIndex(i); setLightboxOpen(true); }}
                     width={56}
                     height={56}
                     style={{
@@ -187,6 +191,9 @@ export default function ListingDetailClient() {
                   />
                 ))}
               </div>
+            )}
+            {lightboxOpen && (
+              <Lightbox images={photos} initialIndex={activeImageIndex} onClose={() => setLightboxOpen(false)} />
             )}
           </>
         );

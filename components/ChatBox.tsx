@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Lightbox from "./Lightbox";
 
 export type ChatMessage = {
   id: string;
@@ -34,6 +35,11 @@ export default function ChatBox({ messages, currentUserId, emptyHint, onSend }: 
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  // All photo URLs sent in this conversation, in order — lets the lightbox
+  // flip through the whole chat's photo history, not just the one clicked.
+  const photoUrls = messages.filter((m) => m.attachmentType === "image" && m.attachmentUrl).map((m) => m.attachmentUrl as string);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -79,13 +85,15 @@ export default function ChatBox({ messages, currentUserId, emptyHint, onSend }: 
         {messages.length === 0 && <p style={{ color: "var(--text-soft)", fontSize: 13 }}>{emptyHint}</p>}
         {messages.map((m) => {
           const mine = m.senderId === currentUserId;
+          const photoIndex = m.attachmentType === "image" && m.attachmentUrl ? photoUrls.indexOf(m.attachmentUrl) : -1;
           return (
             <div key={m.id} className={`msg ${mine ? "me" : "them"}`} style={{ padding: m.attachmentType === "image" ? 4 : undefined }}>
               {m.attachmentType === "image" && m.attachmentUrl && (
                 <img
                   src={m.attachmentUrl}
                   alt="Shared photo"
-                  style={{ display: "block", maxWidth: 220, maxHeight: 220, borderRadius: 10, objectFit: "cover" }}
+                  onClick={() => setLightboxIndex(photoIndex)}
+                  style={{ display: "block", maxWidth: 220, maxHeight: 220, borderRadius: 10, objectFit: "cover", cursor: "pointer" }}
                 />
               )}
               {m.body && <div style={{ marginTop: m.attachmentUrl ? 6 : 0, padding: m.attachmentType === "image" ? "0 6px 4px" : 0 }}>{m.body}</div>}
@@ -126,6 +134,10 @@ export default function ChatBox({ messages, currentUserId, emptyHint, onSend }: 
           Send
         </button>
       </form>
+
+      {lightboxIndex !== null && (
+        <Lightbox images={photoUrls} initialIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
+      )}
     </div>
   );
 }
