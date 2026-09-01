@@ -103,7 +103,7 @@ export default function NavBar({ user }: { user: User }) {
               )}
             </Link>
             <Link href="/my-listings">My Lists</Link>
-            {user.isAdmin && <Link href="/admin/reports">Reports</Link>}
+            {user.isAdmin && <Link href="/admin/stats">Admin</Link>}
             <Link href="/favorites">Favorites</Link>
             <Link href="/listings/new" className="btn btn-primary">
               + Start Sell
